@@ -4,15 +4,15 @@ Simple Python inferface with OpenBCI Cyton Board.
 
 Currently only Cyton with USB dongle is supported.
 
-# Getting Started
+## Getting Started
 
-## Install the codebase
+### Install the codebase
 
 ```bash
 pip isntall git+https://github.com/hellomoto-ai/openbci-interface.git
 ```
 
-## Check the installation.
+### Check the installation
 
 After successful installation, you have `openbci_interface` command.
 
@@ -21,14 +21,13 @@ $ openbci_interface --version
 OpenBCI Interface 0.1.0
 ```
 
-## Stream data using command line.
+### Stream data using command line
 
-### Connect your board.
+#### Connect your board
 
 Connect your board, following [the official instruction](http://docs.openbci.com/Tutorials/00-Tutorials).
 
-
-### List available devices.
+#### List available devices
 
 `list_devices` subcommand will list up the available OpenBCI boards.
 
@@ -37,8 +36,7 @@ $ openbci_interface list_devices
 /dev/cu.usbserial-DM00CXN8
 ```
 
-
-### Stream data from a device.
+#### Stream data from a device
 
 `stream` subcommand will stream data from a board.
 
@@ -70,8 +68,7 @@ $ openbci_interface stream --port /dev/cu.usbserial-DM00CXN8
 
 Use `--help` command to see the other available options.
 
-
-## Use as Python module
+### Use as Python module
 
 Currently Cyton board is available as `openbci_interface.Cyton`.
 
