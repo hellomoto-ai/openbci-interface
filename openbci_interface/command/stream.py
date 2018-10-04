@@ -1,4 +1,4 @@
-"""Entrypoint for `stream` command."""
+"""Implements ``stream`` command."""
 import sys
 import json
 import time
@@ -44,7 +44,10 @@ def _parse_args(args):
 
 
 def main(args):
-    """Entrypoint for `stream` command"""
+    """Entrypoint for ``stream`` command.
+
+    For the detail of the command, use ``stream --help``.
+    """
     args = _parse_args(args)
 
     with _get_board(args) as board:

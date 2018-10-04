@@ -1,4 +1,4 @@
-"""Entrypoint for `list_devices` command."""
+"""Implements ``list_devices`` command."""
 import sys
 import time
 import logging
@@ -32,8 +32,11 @@ def _get_ports():
             yield port
 
 
-def main(_args):
-    """Entrypoint for `list_devices` command"""
+def main(_):
+    """Entrypoint for ``list_devices`` command.
+
+    For the detail of the command, use ``list_devices --help``.
+    """
     for port in _get_ports():
         sys.stdout.write(port)
         sys.stdout.write('\n')
