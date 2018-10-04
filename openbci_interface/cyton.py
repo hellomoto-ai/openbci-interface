@@ -31,7 +31,7 @@ def _parse_sample_rate(message):
     return int(re.search(pattern, message).group(1))
 
 
-class Cyton(object):
+class Cyton:
     """Interface to Cyton board"""
 
     num_eeg = 8
