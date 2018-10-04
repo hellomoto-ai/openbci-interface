@@ -66,11 +66,12 @@ def _set_up():
         ],
         extras_require={
             'dev': [
-                'pytest',
                 'pylint',
                 'flake8',
                 'flake8-print',
+                'pytest',
                 'pytest-cov',
+                'pytest-mock',
             ],
         },
         package_data={

@@ -44,12 +44,27 @@ $ openbci_interface list_devices
 
 ```bash
 $ openbci_interface stream --port /dev/cu.usbserial-DM00CXN8
-tatus.
-2018-10-03 22:48:09,001:  INFO:     Wifi not present, send { to attach the shield$$$
-2018-10-03 22:48:09,001:  INFO: Start streaming.
-{"eeg": [-7028.1931195489315, -6989.770470830259, -7109.017027499322, -7175.781688187324, -143843.8020758393, -168036.70442541892, -175808.00364112898, -170754.56479246198], "aux": [0.012, -0.018000000000000002, 0.506], "packet_id": 0, "timestamp": 1538632089.594613}
-{"eeg": [-7163.4882287369055, -7223.055627710299, -7035.68095394146, -6980.919180025957, -143855.31322423377, -168041.04066384325, -175811.26699581946, -170757.559926219], "aux": [0.0, 0.0, 0.0], "packet_id": 1, "timestamp": 1538632089.599571}
-{"eeg": [-7155.061621077254, -7174.954673642478, -7070.2814543582745, -7093.147288936054, -143871.47353547497, -168041.57710571017, -175812.4963417645, -170758.76692041958], "aux": [0.0, 0.0, 0.0], "packet_id": 2, "timestamp": 1538632089.6047091}
+2018-10-04 00:57:08,587:  INFO: Connecting: /dev/cu.usbserial-DM00CXN8:115200
+2018-10-04 00:57:08,592:  INFO: Initializing board...
+2018-10-04 00:57:10,597:  INFO:     OpenBCI V3 8-16 channel
+2018-10-04 00:57:10,598:  INFO:     On Board ADS1299 Device ID: 0x3E
+2018-10-04 00:57:10,598:  INFO:     LIS3DH Device ID: 0x33
+2018-10-04 00:57:10,598:  INFO:     Firmware: v3.1.1
+2018-10-04 00:57:10,598:  INFO:     $$$
+2018-10-04 00:57:10,598:  INFO: Initialization complete.
+2018-10-04 00:57:10,598:  INFO: Setting all channels to default.
+2018-10-04 00:57:10,684:  INFO:     updating channel settings to default$$$
+2018-10-04 00:57:10,684:  INFO: Getting default channel settings.
+2018-10-04 00:57:10,780:  INFO:     060110$$$
+2018-10-04 00:57:10,780:  INFO: Setting board mode: default
+2018-10-04 00:57:10,876:  INFO:     Success: default$$$
+2018-10-04 00:57:10,876:  INFO: Setting sample rate: 250
+2018-10-04 00:57:11,421:  INFO:     Success: Sample rate is 250Hz$$$
+2018-10-04 00:57:11,421:  INFO: Getting WiFi shield status.
+2018-10-04 00:57:11,533:  INFO:     Wifi not present, send { to attach the shield$$$
+2018-10-04 00:57:11,533:  INFO: Start streaming.
+{"eeg": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "aux": [0.032, -0.028, 1.004], "packet_id": 0, "timestamp": 1538639831.6448839}
+{"eeg": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "aux": [0.0, 0.0, 0.0], "packet_id": 1, "timestamp": 1538639832.124458}
 ...
 ```
 
