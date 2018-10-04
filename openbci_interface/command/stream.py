@@ -44,7 +44,7 @@ def _parse_args(args):
 
 
 def main(args):
-    """Entrypoint for `test_connection` command"""
+    """Entrypoint for `stream` command"""
     args = _parse_args(args)
 
     with _get_board(args) as board:

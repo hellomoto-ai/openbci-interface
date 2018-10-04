@@ -33,7 +33,7 @@ def _get_ports():
 
 
 def main(_args):
-    """Entrypoint for `test_connection` command"""
+    """Entrypoint for `list_devices` command"""
     for port in _get_ports():
         sys.stdout.write(port)
         sys.stdout.write('\n')
