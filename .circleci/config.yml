@@ -25,6 +25,7 @@ jobs:
           command: |
             . venv/bin/activate
             pytest tests || true
+            flake8 openbci_interface
 
 workflows:
   version: 2
