@@ -1,0 +1,9 @@
+2018-10-04 moto<moto@hellomoto.ai>
+	* 0.2.0
+	[Cyton] Remove enable/disable_filtering method as it is not documented.
+	[Cyton] Extract initalization from serial connection.
+2018-10-02 moto<moto@hellomoto.ai>
+	* 0.1.1 Fix imort
+	* 0.1.0 Initial alpha release.
+	[Cyton] Implement list_devices command and stream command.
+	[Cyton] Implement bunch of methods found on SDK.
