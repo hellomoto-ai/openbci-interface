@@ -1,4 +1,4 @@
-openbci_interface
+API Documentation
 =================
 
 .. toctree::

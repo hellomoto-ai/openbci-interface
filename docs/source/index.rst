@@ -6,10 +6,19 @@
 OpenBCI Python Interface Documentation
 ======================================
 
+Welcome to OpenBCI Python Interface documentation.
+
+This project aims to create simple and light Python driver for OpenBCI boards.
+
+Currently only Cyton board is supported, so your contributions are highly appreciated.
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   installation
+   getting_started
    modules
 
 Indices and tables
