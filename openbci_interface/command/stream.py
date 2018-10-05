@@ -61,7 +61,7 @@ def main(args):
             sys.stdout.write(json.dumps(board.read_sample()))
             sys.stdout.write('\n')
             sys.stdout.flush()
-            time.sleep(0.95 / args.sample_rate)
+            time.sleep(0.5 / args.sample_rate)
 
 
 def _get_board(args):

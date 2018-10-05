@@ -14,16 +14,26 @@ STOP_BYTE = 0xC0
 
 ADS1299VREF = 4.5
 ADS1299GAIN = 24.0
-EEG_SCALE = 1000000. * ADS1299VREF / (pow(2, 23)-1) / ADS1299GAIN
+EEG_SCALE = 1000000. * ADS1299VREF / ADS1299GAIN / (pow(2, 23) - 1)
 AUX_SCALE = 0.002 / pow(2, 4)
 
 
-def _unpack_aux_data(stop_byte, raw):
+def _unpack_24bit_signed_int(raw):
+    prefix = b'\xFF' if struct.unpack('3B', raw)[0] & 0x80 > 0 else b'\x00'
+    return struct.unpack('>i', prefix + raw)[0]
+
+
+def _unpack_16bit_signed_int(raw):
+    prefix = b'\xFF' if struct.unpack('2B', raw)[0] & 0x80 > 0 else b'\x00'
+    return struct.unpack('>i', prefix * 2 + raw)[0]
+
+
+def _unpack_aux_data(stop_byte, raw_data):
     if stop_byte != 0xC0:
         warnings.warn(
             'Data format other than 0xC0 '
             '(Standard with accel) is not implemented.')
-    return [v * AUX_SCALE for v in struct.unpack('>hhh', raw)]
+    return [AUX_SCALE * _unpack_16bit_signed_int(v) for v in raw_data]
 
 
 def _parse_sample_rate(message):
@@ -495,9 +505,9 @@ class Cyton:
         timestamp = time.time()
         packet_id = self._read_packet_id()
         eeg = self._read_eeg_data()
-        aux_raw = self._read_aux_data()
+        aux_raw_data = self._read_aux_data()
         stop_byte = self._read_stop_byte()
-        aux = _unpack_aux_data(stop_byte, aux_raw)
+        aux = _unpack_aux_data(stop_byte, aux_raw_data)
         return {
             'eeg': eeg, 'aux': aux,
             'packet_id': packet_id, 'timestamp': timestamp,
@@ -518,15 +528,13 @@ class Cyton:
         return struct.unpack('B', self.read())[0]
 
     def _read_eeg_sample(self):
-        raw = self.read(3)
-        prefix = b'\xFF' if struct.unpack('3B', raw)[0] > 127 else b'\x00'
-        return struct.unpack('>i', prefix + raw)[0] * EEG_SCALE
+        return _unpack_24bit_signed_int(self.read(3)) * EEG_SCALE
 
     def _read_eeg_data(self):
         return [self._read_eeg_sample() for _ in range(self.num_eeg)]
 
     def _read_aux_data(self):
-        return self.read(2 * self.num_aux)
+        return [self.read(2) for _ in range(self.num_aux)]
 
     def _read_stop_byte(self):
         return struct.unpack('B', self.read())[0]
