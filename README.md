@@ -1,5 +1,7 @@
 # OpenBCI Interface
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/6d1f860526dd4c1c9c31effafa9439e4)](https://app.codacy.com/app/moto-hellomoto-ai/openbci-interface?utm_source=github.com&utm_medium=referral&utm_content=hellomoto-ai/openbci-interface&utm_campaign=Badge_Grade_Dashboard)
+
 Simple Python inferface with OpenBCI Cyton Board.
 
 Currently only Cyton with USB dongle is supported.
