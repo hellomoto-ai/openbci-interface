@@ -54,6 +54,7 @@ def main(args):
         board.set_channels_default()
         board.get_default_settings()
         board.set_board_mode(args.board_mode)
+        board.get_board_mode()
         board.set_sample_rate(args.sample_rate)
         board.get_wifi_status()
         board.start_streaming()

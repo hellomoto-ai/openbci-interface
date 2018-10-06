@@ -55,20 +55,23 @@ class Cyton:
     timeout : int
         Read timeout.
 
+
+    :cvar int num_eeg: The number of EEG channels. (8)
+
+    :cvar int num_aux: The number of AUX channels. (3)
+
     References
     ----------
     http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK
     http://docs.openbci.com/Hardware/03-Cyton_Data_Format
-
-
 
     .. automethod:: __enter__
 
     .. automethod:: __exit__
     """
 
-    num_eeg = 8
-    num_aux = 3
+    num_eeg = 8  # The number of EEG channels.
+    num_aux = 3  # The number of AUX channels.
 
     def __init__(self, port, baudrate=115200, timeout=1):
         self.port = port
@@ -137,9 +140,13 @@ class Cyton:
         .. note::
            This method blocks until ``$$$`` string is received.
         """
-        msg = self._serial.read_until(b'$$$').decode('utf-8', errors='replace')
+        msg = self._serial.read_until(b'$$$')
+        _LG.debug(msg)
+        msg = msg.decode('utf-8', errors='replace')
         for line in msg.split('\n'):
             _LG.info('   %s', line)
+        if 'Device failed to poll Host' in msg:
+            raise RuntimeError(msg)
         return msg
 
     def initialize(self):
@@ -165,9 +172,13 @@ class Cyton:
         -------
         str
             Version string
+
+        References
+        ----------
+        http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-get-version
         """
         _LG.info('Getting firmware version')
-        self.write('V')
+        self.write(b'V')
         return self.read_message().replace('$$$', '')
 
     def get_board_mode(self):
@@ -175,8 +186,9 @@ class Cyton:
 
         Returns
         -------
-        str
-            Board mode.
+        str or None
+            One of ``default``, ``debug``, ``analog``, ``digital``, ``marker``
+            if board mode strign is successfully. Otherwise None.
 
         References
         ----------
@@ -184,7 +196,12 @@ class Cyton:
         """
         _LG.info('Getting board mode...')
         self.write(b'//')
-        return self.read_message()
+        message = self.read_message()
+        matched = re.search(r'.*\s(\S+)\$\$\$', message)
+        if matched:
+            return matched.group(1)
+        _LG.warning('Failed to parse board mode from the message; %s', message)
+        return None
 
     def set_board_mode(self, mode):
         """Set board mode.
@@ -344,7 +361,17 @@ class Cyton:
         return self.read_message()
 
     def reset_wifi(self):
-        """Perform a soft (power) reset of the WiFi shield."""
+        """Perform a soft (power) reset of the WiFi shield.
+
+        Returns
+        -------
+        str
+            Message received from the board.
+
+        References
+        ----------
+        http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-wifi-shield-commands
+        """
         _LG.info('Resetting WiFi shield.')
         self.write(b';')
 
@@ -452,13 +479,19 @@ class Cyton:
     def __enter__(self):
         """Context manager for open/close serial connection automatically.
 
+        By utilizing context manager with `with` statement, board is
+        initialized automatically after serial connection is established.
+        Streaming is stopped and serial connection is closed automatically
+        at exit.
+
         .. code-block:: python
 
            with Cyton(port, baudrate, timeout) as board:
+               # no need to call board.initialize()
                board.start_streaming()
                board.read_sample()
+               # no need to call board.stop_streaming()
 
-        Streaming is stopped and serial connection is closed automatically.
         """
         self.open()
         self.initialize()
@@ -475,7 +508,7 @@ class Cyton:
         return exc_type in [None, KeyboardInterrupt]
 
     def read_sample(self):
-        """Read one sample from channels
+        """Read one sample from channels.
 
         Returns
         -------
@@ -485,11 +518,14 @@ class Cyton:
 
                {
                  'eeg': [<channel1>, ..., <channel8>],
-                 'aux': [<channel1>, ..., <channel4>],
+                 'aux': [<channel1>, ..., <channel3>],
                  'packet_id': int,
                  'timestamp': float,
                }
 
+        .. note::
+            This method will discard the message received from board
+            before receiving start byte.
 
         .. note::
            The output format is subject to change.

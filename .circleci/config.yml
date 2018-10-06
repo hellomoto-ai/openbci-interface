@@ -15,7 +15,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install .[dev]
+            pip install .[dev] codacy-coverage
       - save_cache:
           paths:
             - ./venv
@@ -24,8 +24,9 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest tests || true
+            pytest --cov=openbci_interface --cov-report xml:coverage.xml tests 
             flake8 openbci_interface
+            python-codacy-coverage -r coverage.xml
 
 workflows:
   version: 2
