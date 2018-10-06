@@ -51,12 +51,10 @@ def main(args):
     args = _parse_args(args)
 
     with _get_board(args) as board:
-        board.set_channels_default()
-        board.get_default_settings()
         board.set_board_mode(args.board_mode)
         board.get_board_mode()
         board.set_sample_rate(args.sample_rate)
-        board.get_wifi_status()
+        board.get_sample_rate()
         board.start_streaming()
         while True:
             sys.stdout.write(json.dumps(board.read_sample()))

@@ -31,8 +31,8 @@ def _unpack_16bit_signed_int(raw):
 def _unpack_aux_data(stop_byte, raw_data):
     if stop_byte != 0xC0:
         warnings.warn(
-            'Data format other than 0xC0 '
-            '(Standard with accel) is not implemented.')
+            'Stop Byte is %s. Formats other than 0xC0 '
+            '(Standard with accel) is not implemented.' % stop_byte)
     return [AUX_SCALE * _unpack_16bit_signed_int(v) for v in raw_data]
 
 
@@ -55,6 +55,8 @@ class Cyton:
     timeout : int
         Read timeout.
 
+    serial_obj : None
+        Custome Serial instance. Used for testing.
 
     :cvar int num_eeg: The number of EEG channels. (8)
 
@@ -73,11 +75,13 @@ class Cyton:
     num_eeg = 8  # The number of EEG channels.
     num_aux = 3  # The number of AUX channels.
 
-    def __init__(self, port, baudrate=115200, timeout=1):
-        self.port = port
-        self.baudrate = baudrate
-        self.timeout = timeout
-        self._serial = None
+    def __init__(self, port, baudrate=115200, timeout=1, serial_obj=None):
+        self._serial = serial_obj or serial.Serial()
+        # Not passing these attribute
+        # to constructor to avoid immediate port open,
+        self._serial.baudrate = baudrate
+        self._serial.timeout = timeout
+        self._serial.port = port
 
         self._streaming = False
         self._wifi_attached = False
@@ -89,9 +93,10 @@ class Cyton:
 
     def open(self):
         """Open serial port."""
-        _LG.info('Connecting to %s (Baud: %s) ...', self.port, self.baudrate)
-        self._serial = serial.Serial(
-            port=self.port, baudrate=self.baudrate, timeout=self.timeout)
+        _LG.info(
+            'Connecting to %s (Baud: %s) ...',
+            self._serial.port, self._serial.baudrate)
+        self._serial.open()
         _LG.info('Connection established.')
 
     def close(self):
@@ -143,10 +148,12 @@ class Cyton:
         msg = self._serial.read_until(b'$$$')
         _LG.debug(msg)
         msg = msg.decode('utf-8', errors='replace')
-        for line in msg.split('\n'):
-            _LG.info('   %s', line)
         if 'Device failed to poll Host' in msg:
             raise RuntimeError(msg)
+        if not msg.endswith('$$$'):
+            raise RuntimeError('Unexpected message format: `%s`' % msg)
+        for line in msg.split('\n'):
+            _LG.info('   %s', line)
         return msg
 
     def initialize(self):
@@ -314,7 +321,7 @@ class Cyton:
         _LG.info('Attaching WiFi shield...')
         self.write(b'{')
         message = self.read_message()
-        if 'failed' in message.lower():
+        if 'failure' in message.lower():
             raise RuntimeError(message)
         self._wifi_attached = True
 
@@ -340,7 +347,7 @@ class Cyton:
         _LG.info('Detaching WiFi shield...')
         self.write(b'}')
         message = self.read_message()
-        if 'failed' in message.lower():
+        if 'failure' in message.lower():
             raise RuntimeError(message)
         self._wifi_attached = False
 
@@ -374,6 +381,7 @@ class Cyton:
         """
         _LG.info('Resetting WiFi shield.')
         self.write(b';')
+        self.read_message()
 
     def start_streaming(self):
         """Start streaming data.
@@ -552,13 +560,12 @@ class Cyton:
     def _wait_start_byte(self):
         n_skipped = 0
         while True:
-            val = struct.unpack('B', self.read())[0]
-            if val != START_BYTE:
-                n_skipped += 1
-                continue
-            if n_skipped:
-                _LG.warning('Skipped %d bytes at start.', n_skipped)
-            return
+            val = self.read()
+            if val and struct.unpack('B', val)[0] == START_BYTE:
+                break
+            n_skipped += 1
+        if n_skipped:
+            _LG.warning('Skipped %d bytes at start.', n_skipped)
 
     def _read_packet_id(self):
         return struct.unpack('B', self.read())[0]
