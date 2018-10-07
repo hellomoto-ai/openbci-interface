@@ -56,11 +56,13 @@ class Cyton:
         Read timeout.
 
     serial_obj : None
-        Custome Serial instance. Used for testing.
+        Custom Serial instance. Used for testing.
+
 
     :cvar int num_eeg: The number of EEG channels. (8)
 
     :cvar int num_aux: The number of AUX channels. (3)
+
 
     References
     ----------
