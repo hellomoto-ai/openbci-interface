@@ -3,5 +3,5 @@ __all__ = [
     'stream',
 ]
 
-from . import list_devices
-from . import stream
+from .list_devices import main as list_devices
+from .stream import main as stream
