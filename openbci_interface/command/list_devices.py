@@ -1,42 +1,32 @@
 """Implements ``list_devices`` command."""
 import sys
-import time
 import logging
+import argparse
 
-from serial import Serial
-from serial.tools.list_ports import comports
+from openbci_interface import util
 
 _LG = logging.getLogger(__name__)
 
 
-def _is_openbci_device(port):
-    _LG.debug('Checking port: %s', port)
-    with Serial(port=port, baudrate=115200, timeout=1) as ser:
-        try:
-            ser.write(b'v')
-            time.sleep(2)
-            message = ser.read_until(b'$$$').decode('utf-8', errors='ignore')
-        except Exception:  # pylint: disable=broad-except
-            return False
-        if message:
-            for msg in message.split('\n'):
-                _LG.debug('    %s', msg)
-        return 'OpenBCI' in message
+def _parse_args(args):
+    parser = argparse.ArgumentParser(
+        description='List available OpenBCI devices.'
+    )
+    parser.add_argument(
+        '--filter', default='OpenBCI',
+        help='Regular expression applied to '
+        'firmware information string to filter the result.'
+    )
+    parser.add_argument('--debug', action='store_true')
+    return parser.parse_args(args)
 
 
-def _get_ports():
-    ports = [comport.device for comport in comports()]
-    _LG.debug('Found %d ports.', len(ports))
-    for port in ports:
-        if _is_openbci_device(port):
-            yield port
-
-
-def main(_):
+def main(args):
     """Entrypoint for ``list_devices`` command.
 
     For the detail of the command, use ``list_devices --help``.
     """
-    for port in _get_ports():
+    args = _parse_args(args)
+    for port in util.list_devices(filter_regex=args.filter):
         sys.stdout.write(port)
         sys.stdout.write('\n')
