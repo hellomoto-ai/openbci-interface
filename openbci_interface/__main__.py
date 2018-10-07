@@ -4,10 +4,8 @@ import logging
 import argparse
 
 from openbci_interface import __version__
-from openbci_interface.command import (
-    stream,
-    list_devices,
-)
+import openbci_interface.command
+
 
 VERSION_STRING = 'OpenBCI Interface {}'.format(__version__)
 
@@ -31,8 +29,8 @@ def _parse_args(commands):
 def main():
     """Entrypoint for `openbci_interface` command"""
     subcommands = {
-        'stream': stream.main,
-        'list_devices': list_devices.main,
+        module: getattr(openbci_interface.command, module)
+        for module in openbci_interface.command.__all__
     }
     namespace, args = _parse_args(subcommands.keys())
     _init_logger(namespace.debug)
