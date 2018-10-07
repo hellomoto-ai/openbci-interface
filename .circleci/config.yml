@@ -24,9 +24,20 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest --cov=openbci_interface --cov-report xml:coverage.xml tests 
+            mkdir test-repoorts
+            pytest \
+              --cov=openbci_interface \
+              --cov-report xml:coverage.xml \
+              --junitxml=test-reports/junit.xml \
+              tests
             flake8 openbci_interface
             python-codacy-coverage -r coverage.xml
+
+      - store_test_results:
+          path: test-reports
+
+      - store_artifacts:
+          path: test-reports
 
 workflows:
   version: 2
