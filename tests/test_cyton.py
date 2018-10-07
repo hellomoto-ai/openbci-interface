@@ -202,19 +202,18 @@ class TestCytonV300Commands(BaseCytonTestSuite):
 
 
 class TestCytonContexManager(BaseCytonTestSuite):
-    def teardown_method(self):
-        # Context manater closes the serial.
-        # So validation cannot be performed here.
-        pass
-
     def test_context_manager(self):
-        self.serial.patterns = [(b'v', b'''OpenBCI V3 8-16 channel
+        self.serial.patterns = [
+            (b'v', b'''OpenBCI V3 8-16 channel
 On Board ADS1299 Device ID: 0x3E
 LIS3DH Device ID: 0x33
 Firmware: v3.1.1
-$$$''')]
+$$$'''),
+            (b'b', None),
+            (b's', None),
+        ]
         with self.board:
-            self.validate_serial_buffer()
+            self.board.start_streaming()
 
 
 class TestCytonReadSample(BaseCytonTestSuite):

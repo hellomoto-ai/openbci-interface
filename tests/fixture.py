@@ -1,32 +1,8 @@
+import logging
+
 import serial
 
-
-BUFFER_VALS = {
-    b'v': b'''OpenBCI V3 8-16 channel
-On Board ADS1299 Device ID: 0x3E
-LIS3DH Device ID: 0x33
-Firmware: v3.1.1
-$$$''',
-    b'V': b'v3.1.1$$$',
-    b'//': b'Board mode is default$$$',
-    b'~~': b'Success: Sample rate is 250Hz$$$',
-    b':': b'Wifi not present, send { to attach the shield$$$',
-}
-
-
-'''
-Board mode is default$$$
-Success: default$$$
-Success: debug$$$
-Success: analog$$$
-Success: digital$$$
-Success: marker$$$
-'''
-
-def _get_buffer(data):
-    if data in BUFFER_VALS:
-        return BUFFER_VALS[data]
-    raise ValueError('Command %s is not implemented.')
+_LG = logging.getLogger(__name__)
 
 
 class SerialMock:
@@ -50,8 +26,8 @@ class SerialMock:
             url='loop://', timeout=self.timeout, baudrate=self.baudrate)
 
     def close(self):
-        self._serial.close()
-        self._serial = None
+        # Not closing the serial for post-inspection.
+        pass
 
     def read(self, size=1):
         return self._serial.read(size)
@@ -88,6 +64,9 @@ class SerialMock:
 
     @patterns.setter
     def patterns(self, patterns):
+        _LG.debug('Registering patterns;')
+        for pattern in patterns:
+            _LG.debug(pattern)
         self._patterns = iter(patterns)
 
     def validate_no_message_in_buffer(self):
