@@ -197,7 +197,7 @@ class Cyton:
         -------
         str or None
             One of ``default``, ``debug``, ``analog``, ``digital``, ``marker``
-            if board mode strign is successfully. Otherwise None.
+            if the mode string is parsed successfully. Otherwise None.
 
         References
         ----------
