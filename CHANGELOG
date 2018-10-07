@@ -1,3 +1,8 @@
+2018-10-06 moto<moto@hellomoto.ai>
+	* 0.3.0
+	[Cyton] Fix sample value conversion.
+	[Cyton] Fix WiFi shield error detection.
+	[Cyton] Fix `get_firmware_version` method.
 2018-10-04 moto<moto@hellomoto.ai>
 	* 0.2.0
 	[Cyton] Remove enable/disable_filtering method as it is not documented.
