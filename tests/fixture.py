@@ -51,6 +51,7 @@ class SerialMock:
 
     def close(self):
         self._serial.close()
+        self._serial = None
 
     def read(self, size=1):
         return self._serial.read(size)

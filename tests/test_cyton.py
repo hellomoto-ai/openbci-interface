@@ -21,10 +21,13 @@ class BaseCytonTestSuite:
             port='foo', timeout=0.1, serial_obj=self.serial)
         self.board.open()
 
-    def teardown_method(self):
+    def validate_serial_buffer(self):
         """Check if all the IO patterns are consumed"""
         self.serial.validate_no_message_in_buffer()
         self.serial.validate_all_patterns_consumed()
+
+    def teardown_method(self):
+        self.validate_serial_buffer()
 
 
 class TestCommandSet(BaseCytonTestSuite):
@@ -196,6 +199,22 @@ class TestCytonV300Commands(BaseCytonTestSuite):
     def test_get_version(self):
         self.serial.patterns = [(b'V', b'v3.1.1$$$')]
         self.board.get_firmware_version()
+
+
+class TestCytonContexManager(BaseCytonTestSuite):
+    def teardown_method(self):
+        # Context manater closes the serial.
+        # So validation cannot be performed here.
+        pass
+
+    def test_context_manager(self):
+        self.serial.patterns = [(b'v', b'''OpenBCI V3 8-16 channel
+On Board ADS1299 Device ID: 0x3E
+LIS3DH Device ID: 0x33
+Firmware: v3.1.1
+$$$''')]
+        with self.board:
+            self.validate_serial_buffer()
 
 
 class TestCytonReadSample(BaseCytonTestSuite):
