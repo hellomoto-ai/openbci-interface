@@ -13,10 +13,10 @@ jobs:
       - run:
           name: Install Package
           command: |
+            set -x
             python3 -m venv venv
             . venv/bin/activate
-            pip install codacy-coverage
-            pip install -e .[dev]
+            pip install .[dev] codacy-coverage
       - save_cache:
           paths:
             - ./venv
@@ -24,6 +24,7 @@ jobs:
       - run:
           name: Run Tests
           command: |
+            set -x
             . venv/bin/activate
             mkdir test-repoorts
             pytest \
@@ -32,11 +33,12 @@ jobs:
               --cov-report xml:coverage.xml \
               --junitxml=test-reports/junit.xml \
               tests
-            sed -i "s|$(pwd)|$(pwd)/src|g" coverage.xml
+            sed -i "s|venv/lib/python3.6/site-packages|src|g" coverage.xml
             python-codacy-coverage -r coverage.xml
       - run:
           name: Style Check
           command: |
+            set -x
             . venv/bin/activate
             flake8 src
 
