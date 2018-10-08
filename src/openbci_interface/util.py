@@ -37,5 +37,12 @@ def list_devices(filter_regex='OpenBCI', timeout=2):
     _LG.debug('Found %d COM ports.', len(devices))
     for device in devices:
         msg = _get_firmware_string(device, timeout=timeout)
+        _LG.debug('Message: %s', repr(msg))
         if re.search(filter_regex, msg):
             yield device
+        elif 'Device failed to poll Host' in msg:
+            _LG.warning(
+                'Found USB dongle at "%s", '
+                'but it failed to poll message from a board; %s',
+                device, repr(msg)
+            )
