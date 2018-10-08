@@ -15,7 +15,8 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-             pip install .[dev] -e codacy-coverage
+            pip install codacy-coverage
+            pip install -e .[dev]
       - save_cache:
           paths:
             - ./venv
