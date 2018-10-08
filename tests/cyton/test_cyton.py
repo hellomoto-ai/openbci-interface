@@ -23,6 +23,7 @@ class TestCytonCommandSet:
     # Default channel settings
     @staticmethod
     def test_channels_default(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [
             (b'd', b'updating channel settings to default$$$')]
         cyton_mock.board.set_channels_default()
@@ -30,6 +31,7 @@ class TestCytonCommandSet:
     @staticmethod
     def test_get_default_settings(cyton_mock):
         expected = '060110'
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [
             (b'D', b'%s$$$' % expected.encode('utf-8'))]
         found = cyton_mock.board.get_default_settings()
@@ -39,22 +41,26 @@ class TestCytonCommandSet:
     # Streaming
     @staticmethod
     def test_start_streaming(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'b', None)]
         cyton_mock.board.start_streaming()
 
     @staticmethod
     def test_start_streaming_wifi(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'b', b'Stream started$$$')]
         cyton_mock.board._wifi_attached = True
         cyton_mock.board.start_streaming()
 
     @staticmethod
     def test_stop_streaming(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b's', None)]
         cyton_mock.board.stop_streaming()
 
     @staticmethod
     def test_stop_streaming_wifi(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b's', b'Stream stopped$$$')]
         cyton_mock.board._wifi_attached = True
         cyton_mock.board.stop_streaming()
@@ -62,12 +68,9 @@ class TestCytonCommandSet:
     ###########################################################################
     # Misc
     @staticmethod
-    def test_initialize(cyton_mock):
-        cyton_mock.serial.patterns = [(b'v', b'''OpenBCI V3 8-16 channel
-On Board ADS1299 Device ID: 0x3E
-LIS3DH Device ID: 0x33
-Firmware: v3.1.1
-$$$''')]
+    def test_initialize(cyton_mock, init_message):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(b'v', init_message)]
         cyton_mock.board.initialize()
 
 
@@ -80,23 +83,27 @@ class TestCytonV2CommandSet:
     # Timestamp
     @staticmethod
     def test_enable_timestamp_streaming(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'<', None)]
         cyton_mock.board._streaming = True
         cyton_mock.board.enable_timestamp()
 
     @staticmethod
     def test_enable_timestamp(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'<', b'Time stamp ON$$$')]
         cyton_mock.board.enable_timestamp()
 
     @staticmethod
     def test_disable_timestamp_streaming(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'>', None)]
         cyton_mock.board._streaming = True
         cyton_mock.board.disable_timestamp()
 
     @staticmethod
     def test_disable_timestamp(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'>', b'Time stamp OFF$$$')]
         cyton_mock.board.disable_timestamp()
 
@@ -114,6 +121,7 @@ class TestCytonV3CommandSet:
         250, 500, 1000, 2000, 4000, 8000, 16000,
     ])
     def test_get_sample_rate(cyton_mock, sample_rate):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [
             (b'~~', b'Success: Sample rate is %dHz$$$' % sample_rate)]
         found = cyton_mock.board.get_sample_rate()
@@ -130,6 +138,7 @@ class TestCytonV3CommandSet:
         (16000, (b'~0', b'Success: Sample rate is 16000Hz$$$')),
     ])
     def test_set_sample_rate(cyton_mock, sample_rate, pattern):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [pattern]
         found = cyton_mock.board.set_sample_rate(sample_rate)
         assert found == sample_rate
@@ -141,6 +150,7 @@ class TestCytonV3CommandSet:
         'default', 'debug', 'analog', 'digital', 'marker',
     ])
     def test_get_board_mode(cyton_mock, mode):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [
             (b'//', b'Board mode is %s$$$' % mode.encode('utf-8'))
         ]
@@ -156,6 +166,7 @@ class TestCytonV3CommandSet:
         ('marker', (b'/4', b'Success: marker$$$')),
     ])
     def test_set_board_mode(cyton_mock, mode, pattern):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [pattern]
         cyton_mock.board.set_board_mode(mode)
 
@@ -163,23 +174,27 @@ class TestCytonV3CommandSet:
     # WiFi
     @staticmethod
     def test_attach_wifi_success(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'{', b'Success: Wifi attached$$$')]
         cyton_mock.board.attach_wifi()
 
     @staticmethod
     def test_attach_wifi_failure(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'{', b'Failure: Wifi not attached$$$')]
         with pytest.raises(RuntimeError):
             cyton_mock.board.attach_wifi()
 
     @staticmethod
     def test_detach_wifi_success(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'}', b'Success: Wifi removed$$$')]
         cyton_mock.board._wifi_attached = True
         cyton_mock.board.detach_wifi()
 
     @staticmethod
     def test_detach_wifi_failure(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'}', b'Failure: Wifi not removed$$$')]
         cyton_mock.board._wifi_attached = True
         with pytest.raises(RuntimeError):
@@ -187,18 +202,21 @@ class TestCytonV3CommandSet:
 
     @staticmethod
     def test_get_wifi_status_present(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b':', b'Wifi present$$$')]
         cyton_mock.board._wifi_attached = True
         cyton_mock.board.get_wifi_status()
 
     @staticmethod
     def test_get_wifi_status_not_present(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [
             (b':', b'Wifi not present, send { to attach the shield$$$')]
         cyton_mock.board.get_wifi_status()
 
     @staticmethod
     def test_reset_wifi(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b';', b'Wifi soft reset$$$')]
         cyton_mock.board.reset_wifi()
 
@@ -206,6 +224,7 @@ class TestCytonV3CommandSet:
     # Others
     @staticmethod
     def test_get_version(cyton_mock):
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'V', b'v3.1.1$$$')]
         cyton_mock.board.get_firmware_version()
 
@@ -215,18 +234,36 @@ class TestCytonContextManager:
     """Context Manager
     """
     @staticmethod
-    def test_context_manager(cyton_mock):
-        cyton_mock.serial.patterns = [
-            (b'v', b'''OpenBCI V3 8-16 channel
-On Board ADS1299 Device ID: 0x3E
-LIS3DH Device ID: 0x33
-Firmware: v3.1.1
-$$$'''),
+    def test_context_manager(cyton_patch, init_message):
+        cyton_patch.serial.patterns = [
+            (b'v', init_message),
             (b'b', None),
             (b's', None),
         ]
+        with cyton_patch.board as board:
+            board.start_streaming()
+        assert not cyton_patch.serial.is_open
+
+    @staticmethod
+    def test_context_manager_opened(cyton_mock, init_message):
+        """Passing an open Serial instance keeps serial opened at exit"""
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [
+            (b'v', init_message),
+        ]
         with cyton_mock.board:
-            cyton_mock.board.start_streaming()
+            pass
+        assert cyton_mock.serial.is_open
+
+    @staticmethod
+    def test_context_manager_closed(cyton_mock, init_message):
+        """Passing a closed Serial instance will close connection at exit"""
+        cyton_mock.serial.patterns = [
+            (b'v', init_message),
+        ]
+        with cyton_mock.board:
+            pass
+        assert not cyton_mock.serial.is_open
 
 
 @pytest.mark.cyton_sample_acquisition
@@ -236,6 +273,7 @@ class TestCytonReadSample:
     @staticmethod
     def test_read_sample_0xC0(cyton_mock):
         """Test acquisition of standard sample with accel"""
+        cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(
             b'b',
             b'\xa0'          # Start byte
