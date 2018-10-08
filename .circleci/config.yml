@@ -26,6 +26,7 @@ jobs:
             . venv/bin/activate
             mkdir test-repoorts
             pytest \
+              --strict \
               --cov=openbci_interface \
               --cov-report xml:coverage.xml \
               --junitxml=test-reports/junit.xml \

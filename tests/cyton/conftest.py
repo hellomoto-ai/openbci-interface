@@ -1,6 +1,10 @@
+"""Define fixtures for testing cyton module"""
 import logging
+from collections import namedtuple
 
-import serial
+import pytest
+import serial as pyserial
+from openbci_interface import cyton
 
 _LG = logging.getLogger(__name__)
 
@@ -22,7 +26,7 @@ class SerialMock:
     ###########################################################################
     # Methods for mocking Serial behaviors
     def open(self):
-        self._serial = serial.serial_for_url(
+        self._serial = pyserial.serial_for_url(
             url='loop://', timeout=self.timeout, baudrate=self.baudrate)
 
     def close(self):
@@ -87,3 +91,15 @@ class SerialMock:
                 'Not all the I/O patterns are consumed. '
                 'Remaining patterns starts from: %s' % pattern
             ) from None
+
+
+@pytest.fixture(scope='function')
+def cyton_mock():
+    """Instanciate Cyton with SerialMock and inspect buffer at tear down"""
+    serial = SerialMock()
+    board = cyton.Cyton(port='foo', timeout=0.1, serial_obj=serial)
+    board.open()
+    CytonMock = namedtuple('CytonMock', ['board', 'serial'])
+    yield CytonMock(board, serial)
+    serial.validate_no_message_in_buffer()
+    serial.validate_all_patterns_consumed()
