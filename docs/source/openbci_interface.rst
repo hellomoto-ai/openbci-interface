@@ -1,16 +1,6 @@
 openbci\_interface package
 ==========================
 
-Subpackages
------------
-
-.. toctree::
-
-    openbci_interface.command
-
-Submodules
-----------
-
 openbci\_interface.cyton module
 -------------------------------
 
@@ -19,11 +9,10 @@ openbci\_interface.cyton module
     :undoc-members:
     :show-inheritance:
 
+openbci\_interface.util module
+------------------------------
 
-Module contents
----------------
-
-.. automodule:: openbci_interface
+.. automodule:: openbci_interface.util
     :members:
     :undoc-members:
     :show-inheritance:

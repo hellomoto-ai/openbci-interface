@@ -533,6 +533,7 @@ class Cyton:
                  'timestamp': float,
                }
 
+
         .. note::
             This method will discard the message received from board
             before receiving start byte.
