@@ -46,17 +46,22 @@ class Cyton:
 
     Parameters
     ----------
-    port : str
-        Serial port, such as ``/dev/cu.usbserial-DM00CXN8``
+    port : str or Serial instance.
+        Device location, such as ``/dev/cu.usbserial-DM00CXN8``.
+        Alternatively you can pass a Serial instance.
+        If the given instance is already open, then
+        :func:`Cyton.open<openbci_interface.cyton.Cyton.open>`:
+        does not call ``open()`` method of the given instance.
+        Similary, :func:`Cyton.close<openbci_interface.cyton.Cyton.close>`:
+        does not call ``close()`` method of the given instance.
+        Therefore when passing an alredy-opened Serial instance, it is
+        caller's responsibility to close the connection.
 
     baudrate : int
         Baudrate.
 
     timeout : int
         Read timeout.
-
-    serial_obj : None
-        Custom Serial instance. Used for testing.
 
 
     :cvar int num_eeg: The number of EEG channels. (8)
@@ -77,16 +82,24 @@ class Cyton:
     num_eeg = 8  # The number of EEG channels.
     num_aux = 3  # The number of AUX channels.
 
-    def __init__(self, port, baudrate=115200, timeout=1, serial_obj=None):
-        self._serial = serial_obj or serial.Serial()
-        # Not passing these attribute
-        # to constructor to avoid immediate port open,
-        self._serial.baudrate = baudrate
-        self._serial.timeout = timeout
-        self._serial.port = port
+    def __init__(self, port, baudrate=115200, timeout=1):
+        if isinstance(port, str):
+            self._serial = serial.Serial()
+            # Not passing these attribute
+            # to constructor to avoid immediate port open,
+            self._serial.baudrate = baudrate
+            self._serial.timeout = timeout
+            self._serial.port = port
+        else:
+            self._serial = port
 
         self._streaming = False
         self._wifi_attached = False
+
+        # Wheather Serial.close() should be called in self.close().
+        # True when Serial connection was opened by this instance.
+        # False when already-opened Serial instance was passed.
+        self._close_serial = False
 
     @property
     def streaming(self):
@@ -94,18 +107,24 @@ class Cyton:
         return self._streaming
 
     def open(self):
-        """Open serial port."""
-        _LG.info(
-            'Connecting to %s (Baud: %s) ...',
-            self._serial.port, self._serial.baudrate)
-        self._serial.open()
-        _LG.info('Connection established.')
+        """Open serial port if it is not open yet."""
+        if not self._serial.is_open:
+            _LG.info(
+                'Connecting to %s (Baud: %s) ...',
+                self._serial.port, self._serial.baudrate)
+            self._serial.open()
+            _LG.info('Connection established.')
+            self._close_serial = True
 
     def close(self):
-        """Close serial port."""
-        _LG.info('Closing connection ...')
-        self._serial.close()
-        _LG.info('Connection closed.')
+        """Close serial port if it is opened by this class.
+
+        See :func:`__init__<openbci_interface.cyton.Cyton.__init__>`: .
+        """
+        if self._serial.is_open and self._close_serial:
+            _LG.info('Closing connection ...')
+            self._serial.close()
+            _LG.info('Connection closed.')
 
     def write(self, value):
         """Write string to serial port.
@@ -489,7 +508,7 @@ class Cyton:
     def __enter__(self):
         """Context manager for open/close serial connection automatically.
 
-        By utilizing context manager with `with` statement, board is
+        By utilizing context manager with ``with`` statement, board is
         initialized automatically after serial connection is established.
         Streaming is stopped and serial connection is closed automatically
         at exit.
@@ -502,6 +521,26 @@ class Cyton:
                board.read_sample()
                # no need to call board.stop_streaming()
 
+        However when passing an already-opened Serial instance to
+        :func:`Cyton<openbci_interface.cyton.Cyton>`, context manager
+        does not close the serial.
+
+        .. code-block:: python
+
+           # Passing an instance with open connection
+           ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+           with Cyton(ser) as board:
+               pass
+           assert ser.is_open  # Connection is still open.
+
+        .. code-block:: python
+
+           # Passing an instance with connection not opened yet.
+           ser = serial.Serial(baudrate=baudrate, timeout=timeout)
+           ser.port = port
+           with Cyton(ser) as board:
+               pass
+           assert ser.is_open  # Connection is closed.
         """
         self.open()
         self.initialize()
