@@ -1,11 +1,8 @@
-from collections import namedtuple
-
+"""Test cyton module."""
 import pytest
 from openbci_interface import cyton
 
-from . import fixture
-
-# pylint: disable=protected-access,redefined-outer-name,invalid-name
+# pylint: disable=protected-access,invalid-name
 
 pytestmark = pytest.mark.cyton
 
@@ -14,18 +11,6 @@ def test_attributes():
     """Cyton board has 8 EEG channels and 3 AUX channels"""
     assert cyton.Cyton.num_eeg == 8
     assert cyton.Cyton.num_aux == 3
-
-
-@pytest.fixture(scope='function')
-def cyton_mock():
-    """Instanciate Cyton with SerialMock and inspect buffer at tear down"""
-    serial = fixture.SerialMock()
-    board = cyton.Cyton(port='foo', timeout=0.1, serial_obj=serial)
-    board.open()
-    CytonMock = namedtuple('CytonMock', ['board', 'serial'])
-    yield CytonMock(board, serial)
-    serial.validate_no_message_in_buffer()
-    serial.validate_all_patterns_consumed()
 
 
 @pytest.mark.cyton_command_set
