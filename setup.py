@@ -27,7 +27,7 @@ def _update_version_string_with_git_hash(path):
 
 def _get_version():
     path = os.path.join(
-        os.path.dirname(__file__), 'openbci_interface', 'VERSION')
+        os.path.dirname(__file__), 'src', 'openbci_interface', 'VERSION')
 
     try:
         _update_version_string_with_git_hash(path)
@@ -57,9 +57,8 @@ def _set_up():
         long_description=_get_long_description(),
         long_description_content_type='text/markdown',
         url='https://github.com/hellomoto-ai/openbci-interface',
-        packages=setuptools.find_packages(
-            exclude=['tests*'],
-        ),
+        packages=setuptools.find_packages('src'),
+        package_dir={'': 'src'},
         test_suite='tests',
         install_requires=[
             'pyserial < 3.5'
