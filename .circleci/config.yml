@@ -32,6 +32,7 @@ jobs:
               --cov-report xml:coverage.xml \
               --junitxml=test-reports/junit.xml \
               tests
+            sed -i "s|$(pwd)|$(pwd)/src|g" coverage.xml
             python-codacy-coverage -r coverage.xml
       - run:
           name: Style Check
