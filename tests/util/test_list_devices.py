@@ -4,71 +4,16 @@ import pytest
 
 from openbci_interface import util
 
-pytestmark = pytest.mark.util
+from . import conftest
+
+pytestmark = [pytest.mark.util, pytest.mark.util_list_devices]
 
 
-class SerialMock:
-    """Mock Serial Device"""
-    firmware_strings = {
-        'foo': b'',
-        'bar': b'',
-        'cyton_8bit': b'''OpenBCI V3 8bit Board
-Setting ADS1299 Channel Values
-ADS1299 Device ID: 0x3E
-LIS3DH Device ID: 0x33
-$$$''',
-        'cyton_v1': b'''OpenBCI V3 16 channel
-ADS1299 Device ID: 0x3E
-LIS3DH Device ID: 0x33
-$$$''',
-        'cyton_v2': b'''OpenBCI V3 8-16 channel
-ADS1299 Device ID: 0x3E
-LIS3DH Device ID: 0x33
-Firmware: v2.0.0
-$$$''',
-        'cyton_v3': b'''OpenBCI V3 8-16 channel
-On Board ADS1299 Device ID: 0x3E
-LIS3DH Device ID: 0x33
-Firmware: v3.1.1
-$$$''',
-        'ganglion_v2': b'''OpenBCI Ganglion v2.0.0
-LIS2DH ID: 0x33
-MCP3912 CONFIG_1: 0xXX
-$$$'''
-    }
-
-    def __init__(self, port, baudrate, timeout):
-        self.port = port
-        self.baudrate = baudrate
-        self.timeout = timeout
-
-        self.buffer = None
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, _type, _value, _traceback):
-        pass
-
-    def write(self, val):
-        if val == b'v':
-            self.buffer = SerialMock.firmware_strings[self.port]
-        else:
-            raise ValueError(
-                '%s does not support `write` method with value `%s`'
-                % (self.__class__.__name__, val)
-            )
-
-    def read_until(self, _):
-        return self.buffer
-
-
-def comports():
+def _comports():
     Port = namedtuple('ComPort', ['device'])
-    return [Port(device) for device in SerialMock.firmware_strings]
+    return [Port(device) for device in conftest.SerialMock.firmware_strings]
 
 
-@pytest.mark.util_list_devices
 @pytest.mark.parametrize('filter_pattern,expected', [
     (
         'Ganglion',
@@ -84,8 +29,8 @@ def comports():
     ),
 ])
 def test_list_devices(mocker, filter_pattern, expected):
-    mocker.patch.object(util.serial, 'Serial', SerialMock)
-    mocker.patch.object(util.serial.tools.list_ports, 'comports', comports)
+    mocker.patch.object(util.serial, 'Serial', conftest.SerialMock)
+    mocker.patch.object(util.serial.tools.list_ports, 'comports', _comports)
 
     found = util.list_devices(filter_pattern)
     assert sorted(found) == sorted(expected)

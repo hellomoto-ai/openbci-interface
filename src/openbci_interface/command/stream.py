@@ -5,7 +5,8 @@ import time
 import logging
 import argparse
 
-from openbci_interface.cyton import Cyton
+import serial
+from openbci_interface import util
 
 _LG = logging.getLogger(__name__)
 
@@ -50,20 +51,21 @@ def main(args):
     """
     args = _parse_args(args)
 
-    with _get_board(args) as board:
-        board.set_board_mode(args.board_mode)
-        board.get_board_mode()
-        board.set_sample_rate(args.sample_rate)
-        board.get_sample_rate()
-        board.start_streaming()
-        while True:
-            sys.stdout.write(json.dumps(board.read_sample()))
-            sys.stdout.write('\n')
-            sys.stdout.flush()
-            time.sleep(0.5 / args.sample_rate)
+    with _get_serial(args) as serial_obj:
+        with util.connect(serial_obj) as board:
+            board.set_board_mode(args.board_mode)
+            board.get_board_mode()
+            board.set_sample_rate(args.sample_rate)
+            board.get_sample_rate()
+            board.start_streaming()
+            while True:
+                sys.stdout.write(json.dumps(board.read_sample()))
+                sys.stdout.write('\n')
+                sys.stdout.flush()
+                time.sleep(0.5 / args.sample_rate)
 
 
-def _get_board(args):
-    if args.board_type == 'cyton':
-        return Cyton(args.port, args.baudrate, args.timeout)
-    raise NotImplementedError('Currently only Cyton is supported.')
+def _get_serial(args):
+    return serial.Serial(
+        port=args.port, baudrate=args.baudrate, timeout=args.timeout,
+    )
