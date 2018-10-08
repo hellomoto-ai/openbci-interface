@@ -4,6 +4,8 @@ import pytest
 
 from openbci_interface import util
 
+pytestmark = pytest.mark.util
+
 
 @pytest.mark.util_list_devices
 class TestListDevices:
@@ -38,7 +40,7 @@ $$$'''
     @classmethod
     def comports_mock(cls):
         Port = namedtuple('ComPort', ['device'])
-        return [Port(device) for device in cls.firmware_strings.keys()]
+        return [Port(device) for device in cls.firmware_strings]
 
     class SerialMock:
         def __init__(self, port, baudrate, timeout):
