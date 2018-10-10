@@ -52,7 +52,7 @@ def main(args):
     args = _parse_args(args)
 
     with _get_serial(args) as serial_obj:
-        with util.connect(serial_obj) as board:
+        with util.wrap(serial_obj) as board:
             board.set_board_mode(args.board_mode)
             board.get_board_mode()
             board.set_sample_rate(args.sample_rate)
