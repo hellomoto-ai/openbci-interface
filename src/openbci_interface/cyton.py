@@ -599,10 +599,12 @@ class Cyton:
             'packet_id': packet_id, 'timestamp': timestamp,
         }
 
+    # In sample acquisition methods, do not use `self.read` which logs
+    # raw values, and might flood the log
     def _wait_start_byte(self):
         n_skipped = 0
         while True:
-            val = self.read()
+            val = self._serial.read()
             if val and struct.unpack('B', val)[0] == START_BYTE:
                 break
             n_skipped += 1
@@ -610,16 +612,16 @@ class Cyton:
             _LG.warning('Skipped %d bytes at start.', n_skipped)
 
     def _read_packet_id(self):
-        return struct.unpack('B', self.read())[0]
+        return struct.unpack('B', self._serial.read())[0]
 
     def _read_eeg_sample(self):
-        return _unpack_24bit_signed_int(self.read(3)) * EEG_SCALE
+        return _unpack_24bit_signed_int(self._serial.read(3)) * EEG_SCALE
 
     def _read_eeg_data(self):
         return [self._read_eeg_sample() for _ in range(self.num_eeg)]
 
     def _read_aux_data(self):
-        return [self.read(2) for _ in range(self.num_aux)]
+        return [self._serial.read(2) for _ in range(self.num_aux)]
 
     def _read_stop_byte(self):
-        return struct.unpack('B', self.read())[0]
+        return struct.unpack('B', self._serial.read())[0]
