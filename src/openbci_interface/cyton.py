@@ -95,18 +95,18 @@ class Cyton:
         else:
             self._serial = port
 
-        self._streaming = False
-        self._wifi_attached = False
-
         # Wheather Serial.close() should be called in self.close().
         # True when Serial connection was opened by this instance.
         # False when already-opened Serial instance was passed.
         self._close_serial = False
 
-    @property
-    def streaming(self):
-        """Returns the current streaming status."""
-        return self._streaming
+        # Pubclic (read-only) attributes
+        # Since a serial communication must happen to alter the statue of
+        # board, and these are implemented in method with explicit names,
+        # we can use attributes without under score prefix for read-only
+        # property.
+        self.streaming = False
+        self.wifi_attached = False
 
     def open(self):
         """Open serial port if it is not open yet."""
@@ -331,7 +331,7 @@ class Cyton:
         ----------
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-wifi-shield-commands
         """
-        if self._wifi_attached:
+        if self.wifi_attached:
             _LG.warning('WiFi already attached.')
             return
         _LG.info('Attaching WiFi shield...')
@@ -339,7 +339,7 @@ class Cyton:
         message = self.read_message()
         if 'failure' in message.lower():
             raise RuntimeError(message)
-        self._wifi_attached = True
+        self.wifi_attached = True
 
     def detach_wifi(self):
         """Try to detach WiFi shield.
@@ -357,7 +357,7 @@ class Cyton:
         ----------
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-wifi-shield-commands
         """
-        if not self._wifi_attached:
+        if not self.wifi_attached:
             _LG.warning('No WiFi to detach.')
             return
         _LG.info('Detaching WiFi shield...')
@@ -365,7 +365,7 @@ class Cyton:
         message = self.read_message()
         if 'failure' in message.lower():
             raise RuntimeError(message)
-        self._wifi_attached = False
+        self.wifi_attached = False
 
     def get_wifi_status(self):
         """Get the status of WiFi shield.
@@ -452,8 +452,8 @@ class Cyton:
         """
         _LG.info('Start streaming.')
         self.write(b'b')
-        self._streaming = True
-        if self._wifi_attached:
+        self.streaming = True
+        if self.wifi_attached:
             self.read_message()
 
     def stop_streaming(self):
@@ -465,8 +465,8 @@ class Cyton:
         """
         _LG.info('Stop streaming.')
         self.write(b's')
-        self._streaming = False
-        if self._wifi_attached:
+        self.streaming = False
+        if self.wifi_attached:
             self.read_message()
 
     def enable_timestamp(self):

@@ -83,7 +83,7 @@ class TestCytonCommandSet:
     def test_start_streaming_wifi(cyton_mock):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'b', b'Stream started$$$')]
-        cyton_mock.board._wifi_attached = True
+        cyton_mock.board.wifi_attached = True
         cyton_mock.board.start_streaming()
 
     @staticmethod
@@ -96,7 +96,7 @@ class TestCytonCommandSet:
     def test_stop_streaming_wifi(cyton_mock):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b's', b'Stream stopped$$$')]
-        cyton_mock.board._wifi_attached = True
+        cyton_mock.board.wifi_attached = True
         cyton_mock.board.stop_streaming()
 
     ###########################################################################
@@ -119,7 +119,7 @@ class TestCytonV2CommandSet:
     def test_enable_timestamp_streaming(cyton_mock):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'<', None)]
-        cyton_mock.board._streaming = True
+        cyton_mock.board.streaming = True
         cyton_mock.board.enable_timestamp()
 
     @staticmethod
@@ -132,7 +132,7 @@ class TestCytonV2CommandSet:
     def test_disable_timestamp_streaming(cyton_mock):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'>', None)]
-        cyton_mock.board._streaming = True
+        cyton_mock.board.streaming = True
         cyton_mock.board.disable_timestamp()
 
     @staticmethod
@@ -223,14 +223,14 @@ class TestCytonV3CommandSet:
     def test_detach_wifi_success(cyton_mock):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'}', b'Success: Wifi removed$$$')]
-        cyton_mock.board._wifi_attached = True
+        cyton_mock.board.wifi_attached = True
         cyton_mock.board.detach_wifi()
 
     @staticmethod
     def test_detach_wifi_failure(cyton_mock):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'}', b'Failure: Wifi not removed$$$')]
-        cyton_mock.board._wifi_attached = True
+        cyton_mock.board.wifi_attached = True
         with pytest.raises(RuntimeError):
             cyton_mock.board.detach_wifi()
 
@@ -238,7 +238,7 @@ class TestCytonV3CommandSet:
     def test_get_wifi_status_present(cyton_mock):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b':', b'Wifi present$$$')]
-        cyton_mock.board._wifi_attached = True
+        cyton_mock.board.wifi_attached = True
         cyton_mock.board.get_wifi_status()
 
     @staticmethod
