@@ -1,3 +1,12 @@
+2018-10-11 moto<moto@hellomoto.ai>
+	* 0.4.0
+	[util]
+	Add `wrap` method.
+	[Cyton]
+	Allow pass Serial instance to Cyton constructor.
+	Add common exception module.
+	Add enable/disable_channel method.
+	Rename `initialize` to `reset`.
 2018-10-06 moto<moto@hellomoto.ai>
 	* 0.3.0
 	[Cyton] Fix sample value conversion.
