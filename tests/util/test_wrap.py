@@ -1,5 +1,5 @@
 import pytest
-from openbci_interface import util, cyton
+from openbci_interface import util, cyton, exception
 
 from . import conftest
 
@@ -17,12 +17,12 @@ def test_cyton_detection(port):
 @pytest.mark.parametrize('port', ['ganglion_v2'])
 def test_ganglion_detection(port):
     serial_obj = conftest.SerialMock(port=port)
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(exception.NotSupported):
         util.wrap(serial_obj)
 
 
 @pytest.mark.parametrize('port', ['foo', 'bar'])
 def test_non_openbci_board(port):
     serial_obj = conftest.SerialMock(port=port)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(exception.UnexpectedMessageFormat):
         util.wrap(serial_obj)

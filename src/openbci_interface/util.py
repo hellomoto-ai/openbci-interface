@@ -5,7 +5,7 @@ import logging
 import serial
 import serial.tools.list_ports
 
-from openbci_interface import cyton
+from openbci_interface import cyton, exception
 
 _LG = logging.getLogger(__name__)
 
@@ -50,6 +50,23 @@ def list_devices(filter_regex='OpenBCI', timeout=2):
             )
 
 
+def validate_message(message):
+    """Validate message received from serial.
+
+    Raises
+    ------
+    :class:`UnexpectedMessageFormat<openbci_interface.exception.UnexpectedMessageFormat>`
+        Message does not end with ``$$$``.
+
+    :class:`DeviceNotConnected<openbci_interface.exception.DeviceNotConnected>`
+        Serial connection is working, but no board is avaialable.
+    """
+    if not message.endswith('$$$'):
+        raise exception.UnexpectedMessageFormat(message)
+    if 'Device failed to poll Host' in message:
+        raise exception.DeviceNotConnected(message)
+
+
 def _is_cyton(message):
     return 'ADS1299' in message
 
@@ -76,33 +93,24 @@ def wrap(serial_obj):
 
     Raises
     ------
-    RuntimeError
-        When Serial does not return OpenBCI format message.
+    Message validation error
+        See :func:`validate_message()<openbci_interface.util.validate_message>`
 
-    NotImplementedError
-        When unsupported OpenBCI board is found.
-
-    ValuError
-        When unexpected OpenBCI board is found.
+    :class:`NotSupported<openbci_interface.exception.NotSupported>`
+        Unsupported or unknown board type.
     """
     serial_obj.write(b'v')
     message = serial_obj.read_until(b'$$$').decode('utf-8', errors='ignore')
     _LG.debug(repr(message))
 
-    if '$$$' not in message:
-        raise RuntimeError(
-            'Device %s did not return OpenBCI format message; %s'
-            % (serial_obj.port, message))
+    validate_message(message)
 
     if _is_ganglion(message):
         _LG.info('Detected Ganglion board %s.', serial_obj.port)
-        raise NotImplementedError('Ganglion is not supported.')
+        raise exception.NotSupported('Ganglion')
 
     if _is_cyton(message):
         _LG.info('Detected Cyton board %s.', serial_obj.port)
         return cyton.Cyton(serial_obj)
 
-    raise ValueError(
-        'Detected unknown board (%s); %s'
-        % (serial_obj.port, message)
-    )
+    raise exception.NotSupported('Unkonwn')

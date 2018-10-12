@@ -7,6 +7,8 @@ import warnings
 
 import serial
 
+from openbci_interface import util
+
 _LG = logging.getLogger(__name__)
 
 START_BYTE = 0xA0
@@ -161,18 +163,11 @@ class Cyton:
         -------
         str
             Message received from the board.
-
-
-        .. note::
-           This method blocks until ``$$$`` string is received.
         """
         msg = self._serial.read_until(b'$$$')
         _LG.debug(msg)
         msg = msg.decode('utf-8', errors='replace')
-        if 'Device failed to poll Host' in msg:
-            raise RuntimeError(msg)
-        if not msg.endswith('$$$'):
-            raise RuntimeError('Unexpected message format: `%s`' % msg)
+        util.validate_message(msg)
         for line in msg.split('\n'):
             _LG.info('   %s', line)
         return msg

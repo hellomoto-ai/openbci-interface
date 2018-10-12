@@ -16,3 +16,11 @@ openbci\_interface.util module
     :members:
     :undoc-members:
     :show-inheritance:
+
+openbci\_interface.exception module
+-----------------------------------
+
+.. automodule:: openbci_interface.exception
+    :members:
+    :undoc-members:
+    :show-inheritance:
