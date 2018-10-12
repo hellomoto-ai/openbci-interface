@@ -20,6 +20,40 @@ class TestCytonCommandSet:
     http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-command-set
     """
     ###########################################################################
+    # Turn on/off channel
+    @staticmethod
+    @pytest.mark.parametrize('channel,command', [
+        (1, b'!'),
+        (2, b'@'),
+        (3, b'#'),
+        (4, b'$'),
+        (5, b'%'),
+        (6, b'^'),
+        (7, b'&'),
+        (8, b'*'),
+    ])
+    def test_enable_channel(cyton_mock, channel, command):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(command, None)]
+        cyton_mock.board.enable_channel(channel)
+
+    @staticmethod
+    @pytest.mark.parametrize('channel,command', [
+        (1, b'1'),
+        (2, b'2'),
+        (3, b'3'),
+        (4, b'4'),
+        (5, b'5'),
+        (6, b'6'),
+        (7, b'7'),
+        (8, b'8'),
+    ])
+    def test_disable_channel(cyton_mock, channel, command):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(command, None)]
+        cyton_mock.board.disable_channel(channel)
+
+    ###########################################################################
     # Default channel settings
     @staticmethod
     def test_channels_default(cyton_mock):

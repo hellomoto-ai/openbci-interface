@@ -399,6 +399,50 @@ class Cyton:
         self.write(b';')
         self.read_message()
 
+    def enable_channel(self, channel):
+        """Turn on channel for sample acquisition
+
+        Parameters
+        ----------
+        channel : int
+            value must be between 1 - 8, inclusive.
+        """
+        command = {
+            1: b'!',
+            2: b'@',
+            3: b'#',
+            4: b'$',
+            5: b'%',
+            6: b'^',
+            7: b'&',
+            8: b'*',
+        }
+        if channel not in command:
+            raise ValueError('`channel` value must be in range of [1, 8]')
+        self.write(command[channel])
+
+    def disable_channel(self, channel):
+        """Turn off channel for sample acquisition
+
+        Parameters
+        ----------
+        channel : int
+            value must be between 1 - 8, inclusive.
+        """
+        command = {
+            1: b'1',
+            2: b'2',
+            3: b'3',
+            4: b'4',
+            5: b'5',
+            6: b'6',
+            7: b'7',
+            8: b'8',
+        }
+        if channel not in command:
+            raise ValueError('`channel` value must be in range of [1, 8]')
+        self.write(command[channel])
+
     def start_streaming(self):
         """Start streaming data.
 
