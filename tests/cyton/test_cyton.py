@@ -102,10 +102,10 @@ class TestCytonCommandSet:
     ###########################################################################
     # Misc
     @staticmethod
-    def test_initialize(cyton_mock, init_message):
+    def test_reset(cyton_mock, init_message):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'v', init_message)]
-        cyton_mock.board.initialize()
+        cyton_mock.board.reset()
 
 
 @pytest.mark.cyton_v2_command_set
