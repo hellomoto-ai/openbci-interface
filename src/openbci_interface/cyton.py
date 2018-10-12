@@ -192,7 +192,7 @@ class Cyton:
             _LG.info('   %s', line)
         return msg
 
-    def initialize(self):
+    def reset(self):
         """Reset the board state.
 
         Returns
@@ -204,7 +204,7 @@ class Cyton:
         ----------
         http://docs.openbci.com/Hardware/03-Cyton_Data_Format#cyton-data-format-startup
         """
-        _LG.info('Initializing board...')
+        _LG.info('Resetting board...')
         self.write(b'v')
         return self.read_message()
 
@@ -570,14 +570,14 @@ class Cyton:
         """Context manager for open/close serial connection automatically.
 
         By utilizing context manager with ``with`` statement, board is
-        initialized automatically after serial connection is established.
+        reset automatically after serial connection is established.
         Streaming is stopped and serial connection is closed automatically
         at exit.
 
         .. code-block:: python
 
            with Cyton(port, baudrate, timeout) as board:
-               # no need to call board.initialize()
+               # no need to call board.reset()
                board.start_streaming()
                board.read_sample()
                # no need to call board.stop_streaming()
@@ -604,7 +604,7 @@ class Cyton:
            assert ser.is_open  # Connection is closed.
         """
         self.open()
-        self.initialize()
+        self.reset()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
