@@ -43,6 +43,17 @@ def _parse_sample_rate(message):
     return int(re.search(pattern, message).group(1))
 
 
+class ChannelConfig:
+    """Class for holding channel configuration, set by Cyton class.
+
+    :ivar bool enabled:
+       If corresponding channel is enabled True, if disabled, False.
+       None if not known. (initial value)
+    """
+    def __init__(self, enabled=None):
+        self.enabled = enabled
+
+
 class Cyton:
     """Interface to Cyton board
 
@@ -70,6 +81,14 @@ class Cyton:
 
     :cvar int num_aux: The number of AUX channels. (3)
 
+    :ivar bool streaming:
+       True if streaming
+
+    :ivar bool wifi_attached:
+       True if WiFi is attached via :func:`attach_wifi` method.
+
+    :ivar list channel_configs:
+       List of :class:`channel configuration<ChannelConfig>`.
 
     References
     ----------
@@ -107,6 +126,7 @@ class Cyton:
         # property.
         self.streaming = False
         self.wifi_attached = False
+        self.channel_configs = [ChannelConfig() for _ in range(self.num_eeg)]
 
     def open(self):
         """Open serial port if it is not open yet."""
@@ -420,6 +440,7 @@ class Cyton:
         if channel not in command:
             raise ValueError('`channel` value must be in range of [1, 8]')
         self.write(command[channel])
+        self.channel_configs[channel-1].enabled = True
 
     def disable_channel(self, channel):
         """Turn off channel for sample acquisition
@@ -442,6 +463,7 @@ class Cyton:
         if channel not in command:
             raise ValueError('`channel` value must be in range of [1, 8]')
         self.write(command[channel])
+        self.channel_configs[channel-1].enabled = False
 
     def start_streaming(self):
         """Start streaming data.
