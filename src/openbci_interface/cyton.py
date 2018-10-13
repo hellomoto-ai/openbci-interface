@@ -177,12 +177,13 @@ class Cyton:
         return value
 
     def read_message(self):
-        """Read OpenBCI-board specific ($$$-terminated) message.
+        """Read until ``$$$`` is found or timeout occurs.
 
         Returns
         -------
         str
-            Message received from the board.
+            Message received from the board. If timeout occurs,
+            the returnes string might not end with ``$$$``.
         """
         msg = self._serial.read_until(b'$$$')
         _LG.debug(msg)
@@ -426,6 +427,10 @@ class Cyton:
         ----------
         channel : int
             value must be between 1 - 8, inclusive.
+
+        References
+        ----------
+        http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-16-channel-commands-turn-channels-on
         """
         command = {
             1: b'!',
@@ -449,6 +454,10 @@ class Cyton:
         ----------
         channel : int
             value must be between 1 - 8, inclusive.
+
+        References
+        ----------
+        http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-16-channel-commands-turn-channels-off
         """
         command = {
             1: b'1',
