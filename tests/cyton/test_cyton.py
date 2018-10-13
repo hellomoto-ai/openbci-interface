@@ -36,6 +36,7 @@ class TestCytonCommandSet:
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(command, None)]
         cyton_mock.board.enable_channel(channel)
+        assert cyton_mock.board.channel_configs[channel-1].enabled
 
     @staticmethod
     @pytest.mark.parametrize('channel,command', [
@@ -52,6 +53,7 @@ class TestCytonCommandSet:
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(command, None)]
         cyton_mock.board.disable_channel(channel)
+        assert not cyton_mock.board.channel_configs[channel-1].enabled
 
     ###########################################################################
     # Default channel settings
