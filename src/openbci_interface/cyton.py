@@ -124,6 +124,9 @@ class Cyton:
         # board, and these are implemented in method with explicit names,
         # we can use attributes without under score prefix for read-only
         # property.
+        self.firmware_version = None
+        self.board_mode = None
+        self.sample_rate = None
         self.streaming = False
         self.wifi_attached = False
         self.channel_configs = [ChannelConfig() for _ in range(self.num_eeg)]
@@ -223,7 +226,8 @@ class Cyton:
         """
         _LG.info('Getting firmware version')
         self.write(b'V')
-        return self.read_message().replace('$$$', '')
+        self.firmware_version = self.read_message().replace('$$$', '')
+        return self.firmware_version
 
     def get_board_mode(self):
         """Get the current board mode.
@@ -243,9 +247,11 @@ class Cyton:
         message = self.read_message()
         matched = re.search(r'.*\s(\S+)\$\$\$', message)
         if matched:
-            return matched.group(1)
-        _LG.warning('Failed to parse board mode from the message; %s', message)
-        return None
+            self.board_mode = matched.group(1)
+        else:
+            _LG.warning(
+                'Failed to parse board mode from the message; %s', message)
+        return self.board_mode
 
     def set_board_mode(self, mode):
         """Set board mode.
@@ -277,6 +283,7 @@ class Cyton:
             raise ValueError('Board mode must be one of %s' % vals.keys())
         command = b'/' + vals[mode]
         self.write(command)
+        self.board_mode = mode
         return self.read_message()
 
     def get_sample_rate(self):
@@ -293,7 +300,8 @@ class Cyton:
         """
         _LG.info('Getting sample rate...')
         self.write(b'~~')
-        return _parse_sample_rate(self.read_message())
+        self.sample_rate = _parse_sample_rate(self.read_message())
+        return self.sample_rate
 
     def set_sample_rate(self, sample_rate):
         """Set the sample rate.
@@ -334,7 +342,8 @@ class Cyton:
             raise ValueError('Sample rate must be one of %s' % vals.keys())
         command = b'~' + vals[sample_rate]
         self.write(command)
-        return _parse_sample_rate(self.read_message())
+        self.sample_rate = _parse_sample_rate(self.read_message())
+        return self.sample_rate
 
     def attach_wifi(self):
         """Try to attach WiFi shield.
@@ -579,14 +588,14 @@ class Cyton:
         """Context manager for open/close serial connection automatically.
 
         By utilizing context manager with ``with`` statement, board is
-        reset automatically after serial connection is established.
+        initialized automatically after serial connection is established.
         Streaming is stopped and serial connection is closed automatically
         at exit.
 
         .. code-block:: python
 
            with Cyton(port, baudrate, timeout) as board:
-               # no need to call board.reset()
+               # no need to call board.initialize()
                board.start_streaming()
                board.read_sample()
                # no need to call board.stop_streaming()
@@ -612,8 +621,7 @@ class Cyton:
                pass
            assert ser.is_open  # Connection is closed.
         """
-        self.open()
-        self.reset()
+        self.initialize()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -621,9 +629,7 @@ class Cyton:
 
         See :func:`__enter__<openbci_interface.cyton.Cyton.__enter__>`
         """
-        if self.streaming:
-            self.stop_streaming()
-        self.close()
+        self.finalize()
         return exc_type in [None, KeyboardInterrupt]
 
     def read_sample(self):
@@ -695,3 +701,21 @@ class Cyton:
 
     def _read_stop_byte(self):
         return struct.unpack('B', self._serial.read())[0]
+
+    ###########################################################################
+    # Higher level function
+    def initialize(self):
+        """Open connection, reset board and query configurations."""
+        self.open()
+        self.reset()
+        self.get_firmware_version()
+        self.get_board_mode()
+        self.get_sample_rate()
+        for i in range(8):
+            self.enable_channel(i + 1)
+
+    def finalize(self):
+        """Stop streaming if necessary then close connection"""
+        if self.streaming:
+            self.stop_streaming()
+        self.close()
