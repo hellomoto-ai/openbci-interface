@@ -273,6 +273,17 @@ class TestCytonContextManager:
     def test_context_manager(cyton_patch, init_message):
         cyton_patch.serial.patterns = [
             (b'v', init_message),
+            (b'V', b'Firmware: v3.1.1$$$'),
+            (b'//', b'Board mode is default$$$'),
+            (b'~~', b'Success: Sample rate is 250Hz$$$'),
+            (b'!', None),
+            (b'@', None),
+            (b'#', None),
+            (b'$', None),
+            (b'%', None),
+            (b'^', None),
+            (b'&', None),
+            (b'*', None),
             (b'b', None),
             (b's', None),
         ]
@@ -286,6 +297,17 @@ class TestCytonContextManager:
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [
             (b'v', init_message),
+            (b'V', b'Firmware: v3.1.1$$$'),
+            (b'//', b'Board mode is default$$$'),
+            (b'~~', b'Success: Sample rate is 250Hz$$$'),
+            (b'!', None),
+            (b'@', None),
+            (b'#', None),
+            (b'$', None),
+            (b'%', None),
+            (b'^', None),
+            (b'&', None),
+            (b'*', None),
         ]
         with cyton_mock.board:
             pass
@@ -296,6 +318,17 @@ class TestCytonContextManager:
         """Passing a closed Serial instance will close connection at exit"""
         cyton_mock.serial.patterns = [
             (b'v', init_message),
+            (b'V', b'Firmware: v3.1.1$$$'),
+            (b'//', b'Board mode is default$$$'),
+            (b'~~', b'Success: Sample rate is 250Hz$$$'),
+            (b'!', None),
+            (b'@', None),
+            (b'#', None),
+            (b'$', None),
+            (b'%', None),
+            (b'^', None),
+            (b'&', None),
+            (b'*', None),
         ]
         with cyton_mock.board:
             pass
