@@ -1,6 +1,14 @@
 openbci\_interface package
 ==========================
 
+openbci\_interface.exception module
+-----------------------------------
+
+.. automodule:: openbci_interface.exception
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 openbci\_interface.cyton module
 -------------------------------
 
@@ -9,18 +17,18 @@ openbci\_interface.cyton module
     :undoc-members:
     :show-inheritance:
 
-openbci\_interface.util module
-------------------------------
+openbci\_interface.channel_config module
+----------------------------------------
 
-.. automodule:: openbci_interface.util
+.. automodule:: openbci_interface.channel_config
     :members:
     :undoc-members:
     :show-inheritance:
 
-openbci\_interface.exception module
------------------------------------
+openbci\_interface.util module
+------------------------------
 
-.. automodule:: openbci_interface.exception
+.. automodule:: openbci_interface.util
     :members:
     :undoc-members:
     :show-inheritance:
