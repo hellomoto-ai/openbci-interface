@@ -7,7 +7,7 @@ import warnings
 
 import serial
 
-from openbci_interface import util
+from openbci_interface import util, channel_config
 
 _LG = logging.getLogger(__name__)
 
@@ -41,17 +41,6 @@ def _unpack_aux_data(stop_byte, raw_data):
 def _parse_sample_rate(message):
     pattern = r'(\d+)\s*Hz'
     return int(re.search(pattern, message).group(1))
-
-
-class ChannelConfig:
-    """Class for holding channel configuration, set by Cyton class.
-
-    :ivar bool enabled:
-       If corresponding channel is enabled True, if disabled, False.
-       None if not known. (initial value)
-    """
-    def __init__(self, enabled=None):
-        self.enabled = enabled
 
 
 class Cyton:
@@ -88,7 +77,8 @@ class Cyton:
        True if WiFi is attached via :func:`attach_wifi` method.
 
     :ivar list channel_configs:
-       List of :class:`channel configuration<ChannelConfig>`.
+       List of
+       :class:`ChannelConfig<openbci_interface.channel_config.ChannelConfig>`.
 
     References
     ----------
@@ -129,7 +119,8 @@ class Cyton:
         self.sample_rate = None
         self.streaming = False
         self.wifi_attached = False
-        self.channel_configs = [ChannelConfig() for _ in range(self.num_eeg)]
+        self.channel_configs = [
+            channel_config.ChannelConfig(i) for i in range(self.num_eeg)]
 
     def open(self):
         """Open serial port if it is not open yet."""
@@ -482,6 +473,58 @@ class Cyton:
             raise ValueError('`channel` value must be in range of [1, 8]')
         self.write(command[channel])
         self.channel_configs[channel-1].enabled = False
+
+    def configure_channel(
+            self, channel,
+            power_down='ON', gain=24,
+            input_type='NORMAL', bias=1, srb2=1, srb1=0):
+        """Configure channel.
+
+        Parameters
+        ----------
+        channel : int
+            Channel to configure. [1, 8] for Cyton, [1, 16] for Daisy.
+
+        power_down : str or int
+            ``POWER_DOWN`` value. ``ON`` or ``OFF`` if string.
+            0 (==ON) or 1 (==OFF) if integer.
+
+        gain : int
+            ``GAIN_SET`` value. One of 1, 2, 4, 6, 8, 12, 24.
+
+        input_type : str or int
+            ``INPUT_TYPE_SET`` value. One of ``NORMAL`` (corresponding integer
+            value: 0), ``SHORTED`` (1), ``BIAS_MEAS`` (2), ``MVDD`` (3),
+            ``TEMP`` (4), ``TESTSIG`` (5), ``BIAS_DRP`` (6), or
+            ``BIAS_DRN`` (7).
+
+        bias : int
+            ``BIAS_SET`` value. 0 for remove, 1 for include.
+
+        srb2 : int
+            ``SRB2_SET`` value. 0 for disconnect, 1 for connect.
+
+        srb1 : int
+            ``SRB1_SET`` value. 0 for disconnect, 1 for connect.
+
+        References
+        ----------
+        http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-command-set-channel-setting-commands
+        """
+        command = channel_config.get_channel_config_command(
+            channel=channel, power_down=power_down, gain=gain,
+            input_type=input_type, bias=bias, srb2=srb2, srb1=srb1,
+        )
+        self.write(command)
+        self.channel_configs[channel-1].set_config(
+            power_down=power_down, gain=gain,
+            input_type=input_type, bias=bias, srb2=srb2, srb1=srb1,
+        )
+        if not self.streaming or self.wifi_attached:
+            msg = self.read_message()
+            if 'failure' in msg.lower():
+                raise RuntimeError(msg)
+            return msg
 
     def start_streaming(self):
         """Start streaming data.

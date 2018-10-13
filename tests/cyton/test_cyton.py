@@ -56,6 +56,95 @@ class TestCytonCommandSet:
         assert not cyton_mock.board.channel_configs[channel-1].enabled
 
     ###########################################################################
+    # Configure Channel Command
+    @staticmethod
+    @pytest.mark.parametrize(
+        'channel,channel_code', [
+            (1, b'1'),
+            (2, b'2'),
+            (3, b'3'),
+            (4, b'4'),
+            (5, b'5'),
+            (6, b'6'),
+            (7, b'7'),
+            (8, b'8'),
+            # (9, b'Q'),
+            # (10, b'W'),
+            # (11, b'E'),
+            # (12, b'R'),
+            # (13, b'T'),
+            # (14, b'Y'),
+            # (15, b'U'),
+            # (16, b'I'),
+        ])
+    @pytest.mark.parametrize(
+        'power_down,power_down_code', [
+            ('ON', b'0'),
+            ('OFF', b'1'),
+            # (0, b'0'),
+            # (1, b'1'),
+        ])
+    @pytest.mark.parametrize(
+        'gain,gain_code', [
+            (1, b'0'),
+            (2, b'1'),
+            (4, b'2'),
+            (6, b'3'),
+            (8, b'4'),
+            (12, b'5'),
+            (24, b'6'),
+        ])
+    @pytest.mark.parametrize(
+        'input_type,input_type_code', [
+            ('NORMAL', b'0'),
+            ('SHORTED', b'1'),
+            ('BIAS_MEAS', b'2'),
+            ('MVDD', b'3'),
+            ('TEMP', b'4'),
+            ('TESTSIG', b'5'),
+            ('BIAS_DRP', b'6'),
+            ('BIAS_DRN', b'7'),
+        ])
+    @pytest.mark.parametrize(
+        'bias,bias_code', [
+            # (0, b'0'),
+            (1, b'1'),
+        ])
+    @pytest.mark.parametrize(
+        'srb2,srb2_code', [
+            # (0, b'0'),
+            (1, b'1'),
+        ])
+    @pytest.mark.parametrize(
+        'srb1,srb1_code', [
+            (0, b'0'),
+            # (1, b'1'),
+        ])
+    def test_configure_channel(
+            cyton_mock,
+            channel, channel_code,
+            power_down, power_down_code,
+            gain, gain_code,
+            input_type, input_type_code,
+            bias, bias_code,
+            srb2, srb2_code,
+            srb1, srb1_code,
+    ):
+        command = b''.join([
+            b'x',
+            channel_code, power_down_code, gain_code, input_type_code,
+            bias_code, srb2_code, srb1_code,
+            b'X'])
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [
+            (command, None)
+        ]
+        cyton_mock.board.streaming = True
+        cyton_mock.board.configure_channel(
+            channel=channel, power_down=power_down,
+            gain=gain, input_type=input_type, bias=bias, srb2=srb2, srb1=srb1)
+
+    ###########################################################################
     # Default channel settings
     @staticmethod
     def test_channels_default(cyton_mock):
