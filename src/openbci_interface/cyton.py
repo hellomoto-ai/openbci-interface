@@ -15,8 +15,6 @@ START_BYTE = 0xA0
 STOP_BYTE = 0xC0
 
 ADS1299VREF = 4.5
-ADS1299GAIN = 24.0
-EEG_SCALE = 1000000. * ADS1299VREF / ADS1299GAIN / (pow(2, 23) - 1)
 AUX_SCALE = 0.002 / pow(2, 4)
 
 
@@ -41,6 +39,10 @@ def _unpack_aux_data(stop_byte, raw_data):
 def _parse_sample_rate(message):
     pattern = r'(\d+)\s*Hz'
     return int(re.search(pattern, message).group(1))
+
+
+def _get_eeg_scale(gain):
+    return 1000000. * ADS1299VREF / gain / (pow(2, 23) - 1)
 
 
 class Cyton:
@@ -749,11 +751,18 @@ class Cyton:
     def _read_packet_id(self):
         return struct.unpack('B', self._serial.read())[0]
 
-    def _read_eeg_sample(self):
-        return _unpack_24bit_signed_int(self._serial.read(3)) * EEG_SCALE
+    def _read_eeg_sample(self, i):
+        gain = self.channel_configs[i].gain
+        if gain is None:
+            warnings.warn(
+                'Gain value is not explicitly set. Using 24 as fallback. '
+            )
+            gain = 24
+        scale = _get_eeg_scale(gain)
+        return _unpack_24bit_signed_int(self._serial.read(3)) * scale
 
     def _read_eeg_data(self):
-        return [self._read_eeg_sample() for _ in range(self.num_eeg)]
+        return [self._read_eeg_sample(i) for i in range(self.num_eeg)]
 
     def _read_aux_data(self):
         return [self._serial.read(2) for _ in range(self.num_aux)]
