@@ -426,7 +426,7 @@ class Cyton:
         Parameters
         ----------
         channel : int
-            value must be between 1 - 8, inclusive.
+            value must be between 1 - 16, inclusive.
 
         References
         ----------
@@ -441,6 +441,14 @@ class Cyton:
             6: b'^',
             7: b'&',
             8: b'*',
+            9: b'Q',
+            10: b'W',
+            11: b'E',
+            12: b'R',
+            13: b'T',
+            14: b'Y',
+            15: b'U',
+            16: b'I',
         }
         if channel not in command:
             raise ValueError('`channel` value must be in range of [1, 8]')
@@ -468,6 +476,14 @@ class Cyton:
             6: b'6',
             7: b'7',
             8: b'8',
+            9: b'q',
+            10: b'w',
+            11: b'e',
+            12: b'r',
+            13: b't',
+            14: b'y',
+            15: b'u',
+            16: b'i',
         }
         if channel not in command:
             raise ValueError('`channel` value must be in range of [1, 8]')
