@@ -31,10 +31,8 @@ jobs:
               --cov=openbci_interface \
               --junitxml=test-reports/junit.xml \
               tests
-            cat .coverage
             sed -i "s|venv/lib/python3.6/site-packages|src|g" .coverage
-            cat .coverage
-            COVERALLS_REPO_TOKEN="${COVERALLS_REPO_TOKEN}" coveralls
+            coveralls
       - run:
           name: Style Check
           command: |
