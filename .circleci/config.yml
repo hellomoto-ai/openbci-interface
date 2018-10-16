@@ -15,7 +15,7 @@ jobs:
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install .[dev] coveralls
+            pip install .[dev] codecov
       - save_cache:
           paths:
             - ./venv
@@ -32,7 +32,7 @@ jobs:
               --junitxml=test-reports/junit.xml \
               tests
             sed -i "s|venv/lib/python3.6/site-packages|src|g" .coverage
-            coveralls
+            codecov
       - run:
           name: Style Check
           command: |
