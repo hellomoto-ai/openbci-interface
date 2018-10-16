@@ -1,3 +1,8 @@
+2018-10-15 moto<moto@hellomoto.ai>
+	* 0.5.0
+	[Cyton]
+	Add methods to configure channels.
+	Add initialize/finalize command for simpler initialization.
 2018-10-11 moto<moto@hellomoto.ai>
 	* 0.4.0
 	[util]
