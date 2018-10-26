@@ -1,3 +1,8 @@
+2018-10-26 moto<moto@hellomoto.ai>
+	* 0d24d71
+	[Cyton]
+	Set board and channel to default state at initialization.
+	Raise timeout error when timeout happens while waiting for start byte.
 2018-10-15 moto<moto@hellomoto.ai>
 	* 0.5.0
 	[Cyton]
