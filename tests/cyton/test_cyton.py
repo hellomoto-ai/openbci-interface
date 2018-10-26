@@ -1,6 +1,6 @@
 """Test cyton module."""
 import pytest
-from openbci_interface import cyton
+from openbci_interface import cyton, exception
 
 # pylint: disable=protected-access,invalid-name
 
@@ -494,3 +494,16 @@ class TestCytonReadSample:
         for key in sample:
             if key != 'timestamp':
                 assert sample[key] == expected[key]
+
+    @staticmethod
+    def test_read_sample_timeout(cyton_mock):
+        """read_sample raises SampleAcquisitionTimeout when timeout occurs."""
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(
+            b'b',
+            b'w'  # Random value to be skipped
+            b''   # Emulate timeout with empty response
+        )]
+        cyton_mock.board.start_streaming()
+        with pytest.raises(exception.SampleAcquisitionTimeout):
+            cyton_mock.board.read_sample()

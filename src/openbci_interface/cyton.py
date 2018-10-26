@@ -7,7 +7,7 @@ import warnings
 
 import serial
 
-from openbci_interface import util, channel_config
+from openbci_interface import util, channel_config, exception
 
 _LG = logging.getLogger(__name__)
 
@@ -97,11 +97,9 @@ class Cyton:
 
     def __init__(self, port, baudrate=115200, timeout=1):
         if isinstance(port, str):
-            self._serial = serial.Serial()
+            self._serial = serial.Serial(baudrate=baudrate, timeout=timeout)
             # Not passing these attribute
             # to constructor to avoid immediate port open,
-            self._serial.baudrate = baudrate
-            self._serial.timeout = timeout
             self._serial.port = port
         else:
             self._serial = port
@@ -741,6 +739,12 @@ class Cyton:
         .. note::
            For AUX data, only ``0xC0`` stop byte is supported now.
 
+
+        Raises
+        ------
+        openbci_interface.exception.SampleAcquisitionTimeout
+            If time out occurs while waiting for a start byte.
+
         References
         ----------
         http://docs.openbci.com/Hardware/03-Cyton_Data_Format#cyton-data-format-binary-format
@@ -763,7 +767,10 @@ class Cyton:
         n_skipped = 0
         while True:
             val = self._serial.read()
-            if val and struct.unpack('B', val)[0] == START_BYTE:
+            if not val:
+                raise exception.SampleAcquisitionTimeout(
+                    'Time out occurred while waiting for a start byte.')
+            if struct.unpack('B', val)[0] == START_BYTE:
                 break
             n_skipped += 1
         if n_skipped:

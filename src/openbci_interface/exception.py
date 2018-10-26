@@ -22,3 +22,8 @@ class NotSupported(BCIException, NotImplementedError):
 class DeviceNotConnected(BCIException, RuntimeError):
     """Serial is working but board is not connected"""
     pass
+
+
+class SampleAcquisitionTimeout(BCIException, RuntimeError):
+    """Sample acuisition timed out."""
+    pass
