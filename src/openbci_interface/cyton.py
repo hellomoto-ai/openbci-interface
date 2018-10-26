@@ -699,7 +699,7 @@ class Cyton:
            ser.port = port
            with Cyton(ser) as board:
                pass
-           assert ser.is_open  # Connection is closed.
+           assert not ser.is_open  # Connection is closed.
         """
         self.initialize()
         return self
