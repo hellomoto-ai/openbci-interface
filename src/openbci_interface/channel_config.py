@@ -55,10 +55,9 @@ def get_channel_config_command(
         6: b'6', 'BIAS_DRP': b'6',
         7: b'7', 'BIAS_DRN': b'7',
     }
-    if input_type.upper() not in vals:
+    if input_type not in vals:
         raise ValueError(
-            'When `input_type` type is str, '
-            'value must be one of %s (case insensitive).' % vals.keys())
+            '`input_type` type value must be one of %s.' % vals.keys())
     command.append(vals[input_type])
 
     vals = {0: b'0', 1: b'1'}
