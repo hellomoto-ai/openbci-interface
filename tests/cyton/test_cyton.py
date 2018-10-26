@@ -130,19 +130,32 @@ class TestCytonCommandSet:
             srb2, srb2_code,
             srb1, srb1_code,
     ):
+        cfg = cyton_mock.board.channel_configs[channel - 1]
+        assert cfg.power_down is None
+        assert cfg.gain is None
+        assert cfg.input_type is None
+        assert cfg.bias is None
+        assert cfg.srb2 is None
+        assert cfg.srb1 is None
+
         command = b''.join([
             b'x',
-            channel_code, power_down_code, gain_code, input_type_code,
-            bias_code, srb2_code, srb1_code,
+            channel_code, power_down_code, gain_code,
+            input_type_code, bias_code, srb2_code, srb1_code,
             b'X'])
         cyton_mock.serial.open()
-        cyton_mock.serial.patterns = [
-            (command, None)
-        ]
+        cyton_mock.serial.patterns = [(command, None)]
         cyton_mock.board.streaming = True
         cyton_mock.board.configure_channel(
             channel=channel, power_down=power_down,
             gain=gain, input_type=input_type, bias=bias, srb2=srb2, srb1=srb1)
+
+        assert cfg.power_down == power_down
+        assert cfg.gain == gain
+        assert cfg.input_type == input_type
+        assert cfg.bias == bias
+        assert cfg.srb2 == srb2
+        assert cfg.srb1 == srb1
 
     ###########################################################################
     # Default channel settings
@@ -155,11 +168,17 @@ class TestCytonCommandSet:
 
     @staticmethod
     def test_get_default_settings(cyton_mock):
-        expected = '060110'
         cyton_mock.serial.open()
-        cyton_mock.serial.patterns = [
-            (b'D', b'%s$$$' % expected.encode('utf-8'))]
+        cyton_mock.serial.patterns = [(b'D', b'060110$$$')]
         found = cyton_mock.board.get_default_settings()
+        expected = {
+            'power_down': 'ON',
+            'gain': 24,
+            'input_type': 'NORMAL',
+            'bias': 1,
+            'srb2': 1,
+            'srb1': 0,
+        }
         assert found == expected
 
     ###########################################################################
@@ -365,14 +384,15 @@ class TestCytonContextManager:
             (b'V', b'Firmware: v3.1.1$$$'),
             (b'//', b'Board mode is default$$$'),
             (b'~~', b'Success: Sample rate is 250Hz$$$'),
-            (b'!', None),
-            (b'@', None),
-            (b'#', None),
-            (b'$', None),
-            (b'%', None),
-            (b'^', None),
-            (b'&', None),
-            (b'*', None),
+            (b'D', b'060110$$$'),
+            (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
+            (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),
+            (b'#', None), (b'x3060110X', b'Success: Channel set for 3$$$'),
+            (b'$', None), (b'x4060110X', b'Success: Channel set for 4$$$'),
+            (b'%', None), (b'x5060110X', b'Success: Channel set for 5$$$'),
+            (b'^', None), (b'x6060110X', b'Success: Channel set for 6$$$'),
+            (b'&', None), (b'x7060110X', b'Success: Channel set for 7$$$'),
+            (b'*', None), (b'x8060110X', b'Success: Channel set for 8$$$'),
             (b'b', None),
             (b's', None),
         ]
@@ -389,14 +409,15 @@ class TestCytonContextManager:
             (b'V', b'Firmware: v3.1.1$$$'),
             (b'//', b'Board mode is default$$$'),
             (b'~~', b'Success: Sample rate is 250Hz$$$'),
-            (b'!', None),
-            (b'@', None),
-            (b'#', None),
-            (b'$', None),
-            (b'%', None),
-            (b'^', None),
-            (b'&', None),
-            (b'*', None),
+            (b'D', b'060110$$$'),
+            (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
+            (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),
+            (b'#', None), (b'x3060110X', b'Success: Channel set for 3$$$'),
+            (b'$', None), (b'x4060110X', b'Success: Channel set for 4$$$'),
+            (b'%', None), (b'x5060110X', b'Success: Channel set for 5$$$'),
+            (b'^', None), (b'x6060110X', b'Success: Channel set for 6$$$'),
+            (b'&', None), (b'x7060110X', b'Success: Channel set for 7$$$'),
+            (b'*', None), (b'x8060110X', b'Success: Channel set for 8$$$'),
         ]
         with cyton_mock.board:
             pass
@@ -410,14 +431,15 @@ class TestCytonContextManager:
             (b'V', b'Firmware: v3.1.1$$$'),
             (b'//', b'Board mode is default$$$'),
             (b'~~', b'Success: Sample rate is 250Hz$$$'),
-            (b'!', None),
-            (b'@', None),
-            (b'#', None),
-            (b'$', None),
-            (b'%', None),
-            (b'^', None),
-            (b'&', None),
-            (b'*', None),
+            (b'D', b'060110$$$'),
+            (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
+            (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),
+            (b'#', None), (b'x3060110X', b'Success: Channel set for 3$$$'),
+            (b'$', None), (b'x4060110X', b'Success: Channel set for 4$$$'),
+            (b'%', None), (b'x5060110X', b'Success: Channel set for 5$$$'),
+            (b'^', None), (b'x6060110X', b'Success: Channel set for 6$$$'),
+            (b'&', None), (b'x7060110X', b'Success: Channel set for 7$$$'),
+            (b'*', None), (b'x8060110X', b'Success: Channel set for 8$$$'),
         ]
         with cyton_mock.board:
             pass

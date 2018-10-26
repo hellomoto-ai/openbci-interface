@@ -631,10 +631,8 @@ class Cyton:
 
         Returns
         -------
-        str
-            6 ASCII characters indicating ``POWER_DOWN``, ``GAIN_SET``,
-            ``INPUT_TYPE_SET``, ``BIAS_SET``, ``SRB2_SET`` and ``SRB1_SET``,
-            See the refernce for the detail.
+        dict
+            Parameters compatible with :func:`configure_channel` method.
 
         References
         ----------
@@ -643,7 +641,30 @@ class Cyton:
         """
         _LG.info('Getting default channel settings.')
         self.write(b'D')
-        return self.read_message().replace('$$$', '')
+        val = self.read_message().replace('$$$', '')
+
+        power_down = {'0': 'ON', '1': 'OFF'}[val[0]]
+        gain = {
+            '0': 1, '1': 2, '2': 4, '3': 6,
+            '4': 8, '5': 12, '6': 24}[val[1]]
+        input_type = {
+            '0': 'NORMAL', '1': 'SHORTED',
+            '2': 'BIAS_MEAS', '3': 'MVDD',
+            '4': 'TEMP', '5': 'TESTSIG',
+            '6': 'BIAS_DRP', '7': 'BIAS_DRN',
+        }[val[2]]
+        bias = {'0': 0, '1': 1}[val[3]]
+        srb2 = {'0': 0, '1': 1}[val[4]]
+        srb1 = {'0': 0, '1': 1}[val[5]]
+
+        return {
+            'power_down': power_down,
+            'gain': gain,
+            'input_type': input_type,
+            'bias': bias,
+            'srb2': srb2,
+            'srb1': srb1,
+        }
 
     def __enter__(self):
         """Context manager for open/close serial connection automatically.
@@ -773,14 +794,28 @@ class Cyton:
     ###########################################################################
     # Higher level function
     def initialize(self):
-        """Open connection, reset board and query configurations."""
+        """Initialize connection, board then configure channel to default.
+
+        Returns
+        -------
+        str
+            Message received when issueing :func:`reset` method.
+        """
+        wait_time = 0.1  # value picked up randomly without logical meaning
         self.open()
-        self.reset()
+        board_info = self.reset()
         self.get_firmware_version()
         self.get_board_mode()
         self.get_sample_rate()
+        conf = self.get_default_settings()
         for i in range(8):
+            # Channel configuration commands are non-blocking
+            # so adding some wait time here.
             self.enable_channel(i + 1)
+            time.sleep(wait_time)
+            self.configure_channel(i + 1, **conf)
+            time.sleep(wait_time)
+        return board_info
 
     def finalize(self):
         """Stop streaming if necessary then close connection"""
