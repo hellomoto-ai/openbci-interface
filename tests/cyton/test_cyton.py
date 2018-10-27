@@ -212,10 +212,10 @@ class TestCytonCommandSet:
     ###########################################################################
     # Misc
     @staticmethod
-    def test_reset(cyton_mock, init_message):
+    def test_reset_board(cyton_mock, init_message):
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'v', init_message)]
-        cyton_mock.board.reset()
+        cyton_mock.board.reset_board()
 
 
 @pytest.mark.cyton_v2_command_set
@@ -382,8 +382,8 @@ class TestCytonContextManager:
         cyton_patch.serial.patterns = [
             (b'v', init_message),
             (b'V', b'Firmware: v3.1.1$$$'),
-            (b'//', b'Board mode is default$$$'),
-            (b'~~', b'Success: Sample rate is 250Hz$$$'),
+            (b'/0', b'Success: default$$$'),
+            (b'~6', b'Success: Sample rate is 250Hz$$$'),
             (b'D', b'060110$$$'),
             (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
             (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),
@@ -407,8 +407,8 @@ class TestCytonContextManager:
         cyton_mock.serial.patterns = [
             (b'v', init_message),
             (b'V', b'Firmware: v3.1.1$$$'),
-            (b'//', b'Board mode is default$$$'),
-            (b'~~', b'Success: Sample rate is 250Hz$$$'),
+            (b'/0', b'Success: default$$$'),
+            (b'~6', b'Success: Sample rate is 250Hz$$$'),
             (b'D', b'060110$$$'),
             (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
             (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),
@@ -429,8 +429,8 @@ class TestCytonContextManager:
         cyton_mock.serial.patterns = [
             (b'v', init_message),
             (b'V', b'Firmware: v3.1.1$$$'),
-            (b'//', b'Board mode is default$$$'),
-            (b'~~', b'Success: Sample rate is 250Hz$$$'),
+            (b'/0', b'Success: default$$$'),
+            (b'~6', b'Success: Sample rate is 250Hz$$$'),
             (b'D', b'060110$$$'),
             (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
             (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),

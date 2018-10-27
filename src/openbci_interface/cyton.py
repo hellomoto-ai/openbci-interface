@@ -114,6 +114,7 @@ class Cyton:
         # board, and these are implemented in method with explicit names,
         # we can use attributes without under score prefix for read-only
         # property.
+        self.board_info = None
         self.firmware_version = None
         self.board_mode = None
         self.sample_rate = None
@@ -122,9 +123,13 @@ class Cyton:
         self.channel_configs = [
             channel_config.ChannelConfig(i) for i in range(self.num_eeg)]
 
+    @property
+    def is_open(self):
+        return self._serial.is_open
+
     def open(self):
         """Open serial port if it is not open yet."""
-        if not self._serial.is_open:
+        if not self.is_open:
             _LG.info(
                 'Connecting to %s (Baud: %s) ...',
                 self._serial.port, self._serial.baudrate)
@@ -137,7 +142,7 @@ class Cyton:
 
         See :func:`__init__<openbci_interface.cyton.Cyton.__init__>`: .
         """
-        if self._serial.is_open and self._close_serial:
+        if self.is_open and self._close_serial:
             _LG.info('Closing connection ...')
             self._serial.close()
             _LG.info('Connection closed.')
@@ -187,13 +192,8 @@ class Cyton:
             _LG.info('   %s', line)
         return msg
 
-    def reset(self):
-        """Reset the board state.
-
-        Returns
-        -------
-        str
-            Message received from the board.
+    def reset_board(self):
+        """Reset the board state. Set :ivar:`board_info` with returned message.
 
         References
         ----------
@@ -201,7 +201,7 @@ class Cyton:
         """
         _LG.info('Resetting board...')
         self.write(b'v')
-        return self.read_message()
+        self.board_info = self.read_message()
 
     def get_firmware_version(self):
         """Get firmware version
@@ -800,7 +800,7 @@ class Cyton:
 
     ###########################################################################
     # Higher level function
-    def initialize(self):
+    def initialize(self, board_mode='default', sample_rate=250):
         """Initialize connection, board then configure channel to default.
 
         Returns
@@ -810,10 +810,10 @@ class Cyton:
         """
         wait_time = 0.1  # value picked up randomly without logical meaning
         self.open()
-        board_info = self.reset()
+        self.reset_board()
         self.get_firmware_version()
-        self.get_board_mode()
-        self.get_sample_rate()
+        self.set_board_mode(board_mode)
+        self.set_sample_rate(sample_rate)
         conf = self.get_default_settings()
         for i in range(8):
             # Channel configuration commands are non-blocking
@@ -822,7 +822,6 @@ class Cyton:
             time.sleep(wait_time)
             self.configure_channel(i + 1, **conf)
             time.sleep(wait_time)
-        return board_info
 
     def finalize(self):
         """Stop streaming if necessary then close connection"""
