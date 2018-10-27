@@ -72,6 +72,24 @@ class Cyton:
 
     :cvar int num_aux: The number of AUX channels. (3)
 
+    :ivar str board_info:
+       The message returned by Cyton board when resetting the board.
+       This variable is set when :func:`reset_board` method is called.
+
+    :ivar str firmware_version:
+       Firmware version string.
+       This variable is set when :func:`get_firmware_version` method is called.
+
+    :ivar str board_mode:
+       Board mode string.
+       This variable is set when either :func:`get_board_mode` or
+       :func:`set_board_mode` is called.
+
+    :ivar int sample_rate:
+       Sampling rate.
+       This variable is set when either :func:`get_sample_rate` or
+       :func:`set_sample_rate` is called.
+
     :ivar bool streaming:
        True if streaming
 
@@ -193,7 +211,7 @@ class Cyton:
         return msg
 
     def reset_board(self):
-        """Reset the board state. Set :ivar:`board_info` with returned message.
+        """Reset the board state.
 
         References
         ----------
