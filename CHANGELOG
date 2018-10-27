@@ -1,3 +1,9 @@
+2018-10-27 moto<moto@hellomoto.ai>
+	* 0eff254
+	[Cyton]
+	Initialize board config and sampling rate with `initialize` method.
+	Store initial message as `boad_info`.
+	Add `is_open` property.
 2018-10-26 moto<moto@hellomoto.ai>
 	* 0d24d71
 	[Cyton]
