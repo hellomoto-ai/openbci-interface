@@ -470,6 +470,7 @@ class Cyton:
         }
         if channel not in command:
             raise ValueError('`channel` value must be in range of [1, 8]')
+        _LG.info('Enabling channel: %s', channel)
         self.write(command[channel])
         self.channel_configs[channel-1].enabled = True
 
@@ -505,6 +506,7 @@ class Cyton:
         }
         if channel not in command:
             raise ValueError('`channel` value must be in range of [1, 8]')
+        _LG.info('Disabling channel: %s', channel)
         self.write(command[channel])
         self.channel_configs[channel-1].enabled = False
 
@@ -549,6 +551,7 @@ class Cyton:
             channel=channel, power_down=power_down, gain=gain,
             input_type=input_type, bias=bias, srb2=srb2, srb1=srb1,
         )
+        _LG.info('Configuring channel: %s', channel)
         self.write(command)
         self.channel_configs[channel-1].set_config(
             power_down=power_down, gain=gain,
