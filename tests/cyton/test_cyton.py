@@ -9,8 +9,12 @@ pytestmark = pytest.mark.cyton
 
 def test_attributes():
     """Cyton board has 8 EEG channels and 3 AUX channels"""
-    assert cyton.Cyton.num_eeg == 8
+    board = cyton.Cyton(port='foo')
     assert cyton.Cyton.num_aux == 3
+    board.daisy_attached = False
+    assert board.num_eeg == 8
+    board.daisy_attached = True
+    assert board.num_eeg == 16
 
 
 @pytest.mark.cyton_command_set
@@ -68,42 +72,40 @@ class TestCytonCommandSet:
             (6, b'6'),
             (7, b'7'),
             (8, b'8'),
-            # (9, b'Q'),
-            # (10, b'W'),
-            # (11, b'E'),
-            # (12, b'R'),
-            # (13, b'T'),
-            # (14, b'Y'),
-            # (15, b'U'),
-            # (16, b'I'),
+            (9, b'Q'),
+            (10, b'W'),
+            (11, b'E'),
+            (12, b'R'),
+            (13, b'T'),
+            (14, b'Y'),
+            (15, b'U'),
+            (16, b'I'),
         ])
     @pytest.mark.parametrize(
         'power_down,power_down_code', [
             ('ON', b'0'),
-            ('OFF', b'1'),
-            # (0, b'0'),
-            # (1, b'1'),
+            # ('OFF', b'1'),
         ])
     @pytest.mark.parametrize(
         'gain,gain_code', [
-            (1, b'0'),
-            (2, b'1'),
-            (4, b'2'),
-            (6, b'3'),
-            (8, b'4'),
-            (12, b'5'),
+            # (1, b'0'),
+            # (2, b'1'),
+            # (4, b'2'),
+            # (6, b'3'),
+            # (8, b'4'),
+            # (12, b'5'),
             (24, b'6'),
         ])
     @pytest.mark.parametrize(
         'input_type,input_type_code', [
             ('NORMAL', b'0'),
-            ('SHORTED', b'1'),
-            ('BIAS_MEAS', b'2'),
-            ('MVDD', b'3'),
-            ('TEMP', b'4'),
-            ('TESTSIG', b'5'),
-            ('BIAS_DRP', b'6'),
-            ('BIAS_DRN', b'7'),
+            # ('SHORTED', b'1'),
+            # ('BIAS_MEAS', b'2'),
+            # ('MVDD', b'3'),
+            # ('TEMP', b'4'),
+            # ('TESTSIG', b'5'),
+            # ('BIAS_DRP', b'6'),
+            # ('BIAS_DRN', b'7'),
         ])
     @pytest.mark.parametrize(
         'bias,bias_code', [
@@ -216,6 +218,67 @@ class TestCytonCommandSet:
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [(b'v', init_message)]
         cyton_mock.board.reset_board()
+        assert not cyton_mock.board.daisy_attached
+
+    @staticmethod
+    def test_reset_board_daisy(cyton_mock, daisy_init_message):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(b'v', daisy_init_message)]
+        cyton_mock.board.reset_board()
+        assert cyton_mock.board.daisy_attached
+
+
+@pytest.mark.cyton_16_channel_command_set
+class TestCyton16ChannelCommandSet:
+    """Test 16 CHANNEL COMMANDS
+    http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-16-channel-commands
+    """
+    @staticmethod
+    def test_attach_daisy_alread_attached(cyton_mock):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(b'C', b'16$$$')]
+        cyton_mock.board.attach_daisy()
+        assert cyton_mock.board.daisy_attached
+
+    @staticmethod
+    def test_attach_daisy_attached(cyton_mock):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(b'C', b'daisy attached16$$$')]
+        cyton_mock.board.attach_daisy()
+        assert cyton_mock.board.daisy_attached
+
+    @staticmethod
+    def test_attach_daisy_not_attached(cyton_mock):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(b'C', b'no daisy to attach!8$$$')]
+        cyton_mock.board.attach_daisy()
+        assert not cyton_mock.board.daisy_attached
+
+    @staticmethod
+    def test_detach_daisy_present(cyton_mock):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = [(b'c', b'daisy removed$$$')]
+        cyton_mock.board.daisy_attached = True
+        cyton_mock.board.detach_daisy()
+        assert not cyton_mock.board.daisy_attached
+
+    @staticmethod
+    def test_detach_daisy_not_present(cyton_mock):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = []
+        cyton_mock.board.daisy_attached = False
+        cyton_mock.board.wifi_attached = False
+        cyton_mock.board.detach_daisy()
+        assert not cyton_mock.board.daisy_attached
+
+    @staticmethod
+    def test_detach_daisy_not_present_wifi(cyton_mock):
+        cyton_mock.serial.open()
+        cyton_mock.serial.patterns = []
+        cyton_mock.board.daisy_attached = False
+        cyton_mock.board.wifi_attached = True
+        cyton_mock.board.detach_daisy()
+        assert not cyton_mock.board.daisy_attached
 
 
 @pytest.mark.cyton_v2_command_set

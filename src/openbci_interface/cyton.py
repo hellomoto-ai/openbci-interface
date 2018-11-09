@@ -68,8 +68,6 @@ class Cyton:
         Read timeout.
 
 
-    :cvar int num_eeg: The number of EEG channels. (8)
-
     :cvar int num_aux: The number of AUX channels. (3)
 
     :ivar str board_info:
@@ -99,6 +97,12 @@ class Cyton:
     :ivar list channel_configs:
        List of
        :class:`ChannelConfig<openbci_interface.channel_config.ChannelConfig>`.
+       For Daisy compatibility, this list always has 16 items.
+       Use :func:`num_eeg` to get the number of valid channels.
+
+    :ivar bool daisy_attached:
+       True if Daisy module is detected in :func:`reset_board`,
+       otherwise False.
 
     References
     ----------
@@ -110,7 +114,6 @@ class Cyton:
     .. automethod:: __exit__
     """
 
-    num_eeg = 8  # The number of EEG channels.
     num_aux = 3  # The number of AUX channels.
 
     def __init__(self, port, baudrate=115200, timeout=1):
@@ -139,11 +142,18 @@ class Cyton:
         self.streaming = False
         self.wifi_attached = False
         self.channel_configs = [
-            channel_config.ChannelConfig(i) for i in range(self.num_eeg)]
+            channel_config.ChannelConfig(i) for i in range(16)]
+        self.daisy_attached = False
 
     @property
     def is_open(self):
+        """True if serial is open."""
         return self._serial.is_open
+
+    @property
+    def num_eeg(self):
+        """The number of EEG channels. 16 if Daisy is attached, otherwise 8"""
+        return 16 if self.daisy_attached else 8
 
     def open(self):
         """Open serial port if it is not open yet."""
@@ -220,6 +230,7 @@ class Cyton:
         _LG.info('Resetting board...')
         self.write(b'v')
         self.board_info = self.read_message()
+        self.daisy_attached = 'Daisy' in self.board_info
 
     def get_firmware_version(self):
         """Get firmware version
@@ -294,6 +305,41 @@ class Cyton:
         self.write(command)
         self.board_mode = mode
         return self.read_message()
+
+    def attach_daisy(self):
+        """Attach Daisy.
+
+        After successful attach, :ivar:`daisy_attached` is set to True.
+
+        .. note::
+           On reset, the OpenBCI Cyton board will default to 16 channel if
+           Daisy module is present.
+           So this method is only useful for re-attaching Daisy.
+
+        """
+        if self.daisy_attached:
+            _LG.warning('Daisy already attached.')
+            return
+        self.write(b'C')
+        message = self.read_message()
+        pattern = r'[\D]*(\d{1,2})\$\$\$'
+        n_channels = int(re.search(pattern, message).group(1))
+        self.daisy_attached = n_channels == 16
+
+    def detach_daisy(self):
+        """Detach Daisy.
+
+        References
+        ----------
+        http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-16-channel-commands-select-maximum-channel-number
+        """
+        if not self.daisy_attached:
+            _LG.warning('Daisy not attached.')
+            return
+        self.write(b'c')
+        if self.daisy_attached or self.wifi_attached:
+            self.read_message()
+        self.daisy_attached = False
 
     def get_sample_rate(self):
         """Get the current sample rate.
@@ -743,7 +789,7 @@ class Cyton:
             .. code-block:: javascript
 
                {
-                 'eeg': [<channel1>, ..., <channel8>],
+                 'eeg': [<channel1>, ..., <channelN>],
                  'aux': [<channel1>, ..., <channel3>],
                  'packet_id': int,
                  'timestamp': float,
@@ -770,6 +816,14 @@ class Cyton:
         ----------
         http://docs.openbci.com/Hardware/03-Cyton_Data_Format#cyton-data-format-binary-format
         """
+        if self.daisy_attached:
+            sample1 = self._read_packet()
+            sample2 = self._read_packet()
+            sample1['eeg'].extend(sample2['eeg'])
+            return sample1
+        return self._read_packet()
+
+    def _read_packet(self):
         self._wait_start_byte()
         timestamp = time.time()
         packet_id = self._read_packet_id()
@@ -811,7 +865,7 @@ class Cyton:
         return _unpack_24bit_signed_int(self._serial.read(3)) * scale
 
     def _read_eeg_data(self):
-        return [self._read_eeg_sample(i) for i in range(self.num_eeg)]
+        return [self._read_eeg_sample(i) for i in range(8)]
 
     def _read_aux_data(self):
         return [self._serial.read(2) for _ in range(self.num_aux)]
@@ -836,7 +890,7 @@ class Cyton:
         self.set_board_mode(board_mode)
         self.set_sample_rate(sample_rate)
         conf = self.get_default_settings()
-        for i in range(8):
+        for i in range(self.num_eeg):
             # Channel configuration commands are non-blocking
             # so adding some wait time here.
             self.enable_channel(i + 1)
