@@ -5,34 +5,16 @@ import struct
 import logging
 import warnings
 
+from openbci_interface.serial_util import SerialWrapper
 from openbci_interface.core import CytonBoard
-from openbci_interface import util, channel_config, exception
+from openbci_interface import util, channel_config
 
 _LG = logging.getLogger(__name__)
 
-START_BYTE = 0xA0
 STOP_BYTE = 0xC0
 
 ADS1299VREF = 4.5
 AUX_SCALE = 0.002 / pow(2, 4)
-
-
-def _unpack_24bit_signed_int(raw):
-    prefix = b'\xFF' if struct.unpack('3B', raw)[0] & 0x80 > 0 else b'\x00'
-    return struct.unpack('>i', prefix + raw)[0]
-
-
-def _unpack_16bit_signed_int(raw):
-    prefix = b'\xFF' if struct.unpack('2B', raw)[0] & 0x80 > 0 else b'\x00'
-    return struct.unpack('>i', prefix * 2 + raw)[0]
-
-
-def _unpack_aux_data(stop_byte, raw_data):
-    if stop_byte != 0xC0:
-        warnings.warn(
-            'Stop Byte is %s. Formats other than 0xC0 '
-            '(Standard with accel) is not implemented.' % stop_byte)
-    return [AUX_SCALE * _unpack_16bit_signed_int(v) for v in raw_data]
 
 
 def _parse_sample_rate(message):
@@ -46,8 +28,34 @@ def _parse_sample_rate(message):
     return sample_rate
 
 
+def _unpack_24bit_signed_int(raw):
+    prefix = b'\xFF' if struct.unpack('3B', raw)[0] & 0x80 > 0 else b'\x00'
+    return struct.unpack('>i', prefix + raw)[0]
+
+
+def _unpack_16bit_signed_int(raw):
+    prefix = b'\xFF' if struct.unpack('2B', raw)[0] & 0x80 > 0 else b'\x00'
+    return struct.unpack('>i', prefix * 2 + raw)[0]
+
+
+def _parse_aux(stop_byte, raw_data):
+    if stop_byte != 0xC0:
+        warnings.warn(
+            'Stop Byte is %s. Formats other than 0xC0 '
+            '(Standard with accel) is not implemented.' % stop_byte)
+    return [AUX_SCALE * _unpack_16bit_signed_int(v) for v in raw_data]
+
+
 def _get_eeg_scale(gain):
     return 1000000. * ADS1299VREF / gain / (pow(2, 23) - 1)
+
+
+def _parse_eeg(raw_eeg, gain=None):
+    if gain is None:
+        warnings.warn('Gain value is not explicitly set. Using 24.')
+        gain = 24
+    scale = _get_eeg_scale(gain)
+    return _unpack_24bit_signed_int(raw_eeg) * scale
 
 
 class Cyton:
@@ -114,7 +122,8 @@ class Cyton:
     num_aux = 3  # The number of AUX channels.
 
     def __init__(self, port, baudrate=115200, timeout=1):
-        self._board = CytonBoard(port=port, baudrate=baudrate, timeout=timeout)
+        self._serial = SerialWrapper(port, baudrate, timeout)
+        self._board = CytonBoard(self._serial)
 
         # Public (read-only) attributes
         # Since a serial communication must happen to alter the state of
@@ -727,62 +736,24 @@ class Cyton:
         ----------
         http://docs.openbci.com/Hardware/03-Cyton_Data_Format#cyton-data-format-binary-format
         """
+        sample = self._read_packet()
         if self.daisy_attached:
-            sample1 = self._read_packet()
-            sample2 = self._read_packet()
-            sample1['eeg'].extend(sample2['eeg'])
-            return sample1
-        return self._read_packet()
+            sample['eeg'].extend(self._read_packet()['eeg'])
+        sample['timestamp'] = time.time()
+        return sample
 
     def _read_packet(self):
-        self._wait_start_byte()
-        timestamp = time.time()
-        packet_id = self._read_packet_id()
-        eeg = self._read_eeg_data()
-        aux_raw_data = self._read_aux_data()
-        stop_byte = self._read_stop_byte()
-        aux = _unpack_aux_data(stop_byte, aux_raw_data)
-        return {
-            'eeg': eeg, 'aux': aux,
-            'packet_id': packet_id, 'timestamp': timestamp,
-        }
+        self._board.wait_start_byte()
+        data = self._board.read_packet()
+        data['eeg'] = self._parse_eeg(data['eeg'])
+        data['aux'] = _parse_aux(data['stop_byte'], data['aux'])
+        return {key: data[key] for key in ['packet_id', 'eeg', 'aux']}
 
-    # In sample acquisition methods, do not use `self.read` which logs
-    # raw values, and might flood the log
-    def _wait_start_byte(self):
-        n_skipped = 0
-        while True:
-            val = self._board.read()
-            if not val:
-                raise exception.SampleAcquisitionTimeout(
-                    'Time out occurred while waiting for a start byte.')
-            if struct.unpack('B', val)[0] == START_BYTE:
-                break
-            n_skipped += 1
-        if n_skipped:
-            _LG.warning('Skipped %d bytes at start.', n_skipped)
-
-    def _read_packet_id(self):
-        return struct.unpack('B', self._board.read())[0]
-
-    def _read_eeg_sample(self, i):
-        gain = self.channel_configs[i].gain
-        if gain is None:
-            warnings.warn(
-                'Gain value is not explicitly set. Using 24 as fallback. '
-            )
-            gain = 24
-        scale = _get_eeg_scale(gain)
-        return _unpack_24bit_signed_int(self._board.read(3)) * scale
-
-    def _read_eeg_data(self):
-        return [self._read_eeg_sample(i) for i in range(8)]
-
-    def _read_aux_data(self):
-        return [self._board.read(2) for _ in range(self.num_aux)]
-
-    def _read_stop_byte(self):
-        return struct.unpack('B', self._board.read())[0]
+    def _parse_eeg(self, raw_eeg_data):
+        return [
+            _parse_eeg(raw_eeg, self.channel_configs[i].gain)
+            for i, raw_eeg in enumerate(raw_eeg_data)
+        ]
 
     ###########################################################################
     # Higher level function
@@ -795,7 +766,7 @@ class Cyton:
             Message received when issueing :func:`reset` method.
         """
         wait_time = 0.1  # value picked up randomly without logical meaning
-        self._board.open()
+        self._serial.open()
         self.reset_board()
         self.get_firmware_version()
         self.set_board_mode(board_mode)
@@ -813,4 +784,4 @@ class Cyton:
         """Stop streaming if necessary then close connection"""
         if self.streaming:
             self.stop_streaming()
-        self._board.close()
+        self._serial.close()

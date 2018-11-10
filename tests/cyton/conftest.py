@@ -134,7 +134,7 @@ def cyton_patch(mocker):
     """
     mocker.patch.object(serial_util.serial, 'Serial', SerialMock)
     board = cyton.Cyton(port='loop://')
-    serial = board._board._serial
+    serial = board._serial._serial
     BoardAndSerial = namedtuple('BoardAndSerial', ['board', 'serial'])
     yield BoardAndSerial(board, serial)
     serial.validate_no_message_in_buffer()
