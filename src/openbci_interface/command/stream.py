@@ -5,8 +5,7 @@ import time
 import logging
 import argparse
 
-import serial
-from openbci_interface import util
+from openbci_interface import Cyton
 
 _LG = logging.getLogger(__name__)
 
@@ -51,30 +50,23 @@ def main(args):
     """
     args = _parse_args(args)
 
-    with _get_serial(args) as serial_obj:
-        with util.wrap(serial_obj) as board:
-            board.set_board_mode(args.board_mode)
-            board.get_board_mode()
-            board.set_sample_rate(args.sample_rate)
-            board.get_sample_rate()
-            board.start_streaming()
+    with Cyton(args.port, args.baudrate, args.timeout) as board:
+        board.set_board_mode(args.board_mode)
+        board.get_board_mode()
+        board.set_sample_rate(args.sample_rate)
+        board.get_sample_rate()
+        board.start_streaming()
 
-            period = 0.85 / board.sample_rate
-            unit_wait = period / 10.0
-            last_acquired = time.time()
-            while True:
-                now = time.time()
-                if now - last_acquired < period:
-                    time.sleep(unit_wait)
-                    continue
-                sample = board.read_sample()
-                last_acquired = now
-                sys.stdout.write(json.dumps(sample))
-                sys.stdout.write('\n')
-                sys.stdout.flush()
-
-
-def _get_serial(args):
-    return serial.Serial(
-        port=args.port, baudrate=args.baudrate, timeout=args.timeout,
-    )
+        period = 0.85 / board.sample_rate
+        unit_wait = period / 10.0
+        last_acquired = time.time()
+        while True:
+            now = time.time()
+            if now - last_acquired < period:
+                time.sleep(unit_wait)
+                continue
+            sample = board.read_sample()
+            last_acquired = now
+            sys.stdout.write(json.dumps(sample))
+            sys.stdout.write('\n')
+            sys.stdout.flush()

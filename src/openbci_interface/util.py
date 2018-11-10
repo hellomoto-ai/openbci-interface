@@ -5,7 +5,7 @@ import logging
 import serial
 import serial.tools.list_ports
 
-from openbci_interface import cyton, exception
+from openbci_interface import exception
 
 _LG = logging.getLogger(__name__)
 
@@ -65,52 +65,3 @@ def validate_message(message):
         raise exception.UnexpectedMessageFormat(message)
     if 'Device failed to poll Host' in message:
         raise exception.DeviceNotConnected(message)
-
-
-def _is_cyton(message):
-    return 'ADS1299' in message
-
-
-def _is_ganglion(message):
-    return 'Ganglion' in message
-
-
-def wrap(serial_obj):
-    """Autodetect board-type and return serial wrapper for the type detected.
-
-    Parameters
-    ----------
-    serial_obj : serial.Serial
-        Serial instance with open connection
-
-    Returns
-    -------
-    Board
-        Serial wrapper for detected board.
-        :func:`Cyton<openbci_interface.cyton.Cyton>` for cyton board.
-
-        Other boards are not supported yet.
-
-    Raises
-    ------
-    Message validation error
-        See :func:`validate_message()<openbci_interface.util.validate_message>`
-
-    :class:`NotSupported<openbci_interface.exception.NotSupported>`
-        Unsupported or unknown board type.
-    """
-    serial_obj.write(b'v')
-    message = serial_obj.read_until(b'$$$').decode('utf-8', errors='ignore')
-    _LG.debug(repr(message))
-
-    validate_message(message)
-
-    if _is_ganglion(message):
-        _LG.info('Detected Ganglion board %s.', serial_obj.port)
-        raise exception.NotSupported('Ganglion')
-
-    if _is_cyton(message):
-        _LG.info('Detected Cyton board %s.', serial_obj.port)
-        return cyton.Cyton(serial_obj)
-
-    raise exception.NotSupported('Unkonwn')
