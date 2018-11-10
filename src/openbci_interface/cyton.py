@@ -5,7 +5,6 @@ import struct
 import logging
 import warnings
 
-from openbci_interface.serial_util import SerialWrapper
 from openbci_interface.core import CytonBoard
 from openbci_interface import util, channel_config
 
@@ -63,15 +62,8 @@ class Cyton:
 
     Parameters
     ----------
-    port : str or Serial instance.
-        See :class:`SerialWrapper<openbci_interface.serial_util.SerialWrapper>`
-
-    baudrate : int
-        See :class:`SerialWrapper<openbci_interface.serial_util.SerialWrapper>`
-
-    timeout : int
-        See :class:`SerialWrapper<openbci_interface.serial_util.SerialWrapper>`
-
+    serial : serial.Serial
+        Serial object used to communicate with board.
 
     :cvar int num_aux: The number of AUX channels. (3)
 
@@ -121,8 +113,8 @@ class Cyton:
 
     num_aux = 3  # The number of AUX channels.
 
-    def __init__(self, port, baudrate=115200, timeout=1):
-        self._serial = SerialWrapper(port, baudrate, timeout)
+    def __init__(self, serial):
+        self._serial = serial
         self._board = CytonBoard(self._serial)
 
         # Public (read-only) attributes
@@ -766,7 +758,6 @@ class Cyton:
             Message received when issueing :func:`reset` method.
         """
         wait_time = 0.1  # value picked up randomly without logical meaning
-        self._serial.open()
         self.reset_board()
         self.get_firmware_version()
         self.set_board_mode(board_mode)
@@ -784,4 +775,3 @@ class Cyton:
         """Stop streaming if necessary then close connection"""
         if self.streaming:
             self.stop_streaming()
-        self._serial.close()
