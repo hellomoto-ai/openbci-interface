@@ -9,6 +9,22 @@ openbci\_interface.exception module
     :undoc-members:
     :show-inheritance:
 
+openbci\_interface.core module
+------------------------------
+
+.. automodule:: openbci_interface.core
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+openbci\_interface.serial_util module
+-------------------------------------
+
+.. automodule:: openbci_interface.serial_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 openbci\_interface.cyton module
 -------------------------------
 
