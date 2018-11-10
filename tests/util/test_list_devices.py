@@ -21,11 +21,14 @@ def _comports():
     ),
     (
         'ADS1299',
-        ['cyton_8bit', 'cyton_v1', 'cyton_v2', 'cyton_v3'],
+        ['cyton_8bit', 'cyton_v1', 'cyton_v2', 'cyton_v3', 'daisy_v3'],
     ),
     (
         'OpenBCI',
-        ['cyton_8bit', 'cyton_v1', 'cyton_v2', 'cyton_v3', 'ganglion_v2'],
+        [
+            'cyton_8bit', 'cyton_v1', 'cyton_v2', 'cyton_v3',
+            'daisy_v3', 'ganglion_v2',
+        ],
     ),
 ])
 def test_list_devices(mocker, filter_pattern, expected):

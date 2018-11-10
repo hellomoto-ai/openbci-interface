@@ -11,7 +11,15 @@ pytestmark = [pytest.mark.util, pytest.mark.util_wrap]
 ])
 def test_cyton_detection(port):
     serial_obj = conftest.SerialMock(port=port)
-    assert isinstance(util.wrap(serial_obj), cyton.Cyton)
+    board = util.wrap(serial_obj)
+    assert isinstance(board, cyton.Cyton)
+
+
+@pytest.mark.parametrize('port', ['daisy_v3'])
+def test_daisy_detection(port):
+    serial_obj = conftest.SerialMock(port=port)
+    board = util.wrap(serial_obj)
+    assert isinstance(board, cyton.Cyton)
 
 
 @pytest.mark.parametrize('port', ['ganglion_v2'])

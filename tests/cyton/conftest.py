@@ -96,7 +96,7 @@ class SerialMock:
         """Validate that no message-to-be-read is present in Serial buffer"""
         message = self.read()
         if message:
-            message += self.read_until(100)
+            message += self.read(100)
             raise AssertionError(
                 'Un-read message found in buffer; %s' % message
             ) from None
@@ -110,7 +110,7 @@ class SerialMock:
         else:
             raise AssertionError(
                 'Not all the I/O patterns are consumed. '
-                'Remaining patterns starts from: %s' % pattern
+                'Remaining patterns starts from: %s' % repr(pattern)
             ) from None
 
 
@@ -145,6 +145,16 @@ def cyton_patch(mocker):
 def init_message():
     return b'''OpenBCI V3 8-16 channel
 On Board ADS1299 Device ID: 0x3E
+LIS3DH Device ID: 0x33
+Firmware: v3.1.1
+$$$'''
+
+
+@pytest.fixture(scope='module')
+def daisy_init_message():
+    return b'''OpenBCI V3 8-16 channel
+On Board ADS1299 Device ID: 0x3E
+On Daisy ADS1299 Device ID: 0x3E
 LIS3DH Device ID: 0x33
 Firmware: v3.1.1
 $$$'''
