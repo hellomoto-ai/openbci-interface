@@ -5,8 +5,7 @@ import struct
 import logging
 import warnings
 
-import serial
-
+from openbci_interface.core import CytonBoard
 from openbci_interface import util, channel_config, exception
 
 _LG = logging.getLogger(__name__)
@@ -38,7 +37,13 @@ def _unpack_aux_data(stop_byte, raw_data):
 
 def _parse_sample_rate(message):
     pattern = r'(\d+)\s*Hz'
-    return int(re.search(pattern, message).group(1))
+    matched = re.search(pattern, message)
+    sample_rate = None
+    if matched:
+        sample_rate = int(matched.group(1))
+    else:
+        _LG.warning('Failed to parse sample rate; %s', message)
+    return sample_rate
 
 
 def _get_eeg_scale(gain):
@@ -46,26 +51,18 @@ def _get_eeg_scale(gain):
 
 
 class Cyton:
-    """Interface to Cyton board
+    """Interface to Cyton board.
 
     Parameters
     ----------
     port : str or Serial instance.
-        Device location, such as ``/dev/cu.usbserial-DM00CXN8``.
-        Alternatively you can pass a Serial instance.
-        If the given instance is already open, then
-        :func:`Cyton.open<openbci_interface.cyton.Cyton.open>`:
-        does not call ``open()`` method of the given instance.
-        Similary, :func:`Cyton.close<openbci_interface.cyton.Cyton.close>`:
-        does not call ``close()`` method of the given instance.
-        Therefore when passing an alredy-opened Serial instance, it is
-        caller's responsibility to close the connection.
+        See :class:`SerialWrapper<openbci_interface.serial_util.SerialWrapper>`
 
     baudrate : int
-        Baudrate.
+        See :class:`SerialWrapper<openbci_interface.serial_util.SerialWrapper>`
 
     timeout : int
-        Read timeout.
+        See :class:`SerialWrapper<openbci_interface.serial_util.SerialWrapper>`
 
 
     :cvar int num_aux: The number of AUX channels. (3)
@@ -117,24 +114,13 @@ class Cyton:
     num_aux = 3  # The number of AUX channels.
 
     def __init__(self, port, baudrate=115200, timeout=1):
-        if isinstance(port, str):
-            self._serial = serial.Serial(baudrate=baudrate, timeout=timeout)
-            # Not passing these attribute
-            # to constructor to avoid immediate port open,
-            self._serial.port = port
-        else:
-            self._serial = port
+        self._board = CytonBoard(port=port, baudrate=baudrate, timeout=timeout)
 
-        # Wheather Serial.close() should be called in self.close().
-        # True when Serial connection was opened by this instance.
-        # False when already-opened Serial instance was passed.
-        self._close_serial = False
-
-        # Pubclic (read-only) attributes
-        # Since a serial communication must happen to alter the statue of
+        # Public (read-only) attributes
+        # Since a serial communication must happen to alter the state of
         # board, and these are implemented in method with explicit names,
-        # we can use attributes without under score prefix for read-only
-        # property.
+        # we use attributes without under score prefix for read-only
+        # property. User should not alter these properties.
         self.board_info = None
         self.firmware_version = None
         self.board_mode = None
@@ -146,62 +132,9 @@ class Cyton:
         self.daisy_attached = False
 
     @property
-    def is_open(self):
-        """True if serial is open."""
-        return self._serial.is_open
-
-    @property
     def num_eeg(self):
         """The number of EEG channels. 16 if Daisy is attached, otherwise 8"""
         return 16 if self.daisy_attached else 8
-
-    def open(self):
-        """Open serial port if it is not open yet."""
-        if not self.is_open:
-            _LG.info(
-                'Connecting to %s (Baud: %s) ...',
-                self._serial.port, self._serial.baudrate)
-            self._serial.open()
-            _LG.info('Connection established.')
-            self._close_serial = True
-
-    def close(self):
-        """Close serial port if it is opened by this class.
-
-        See :func:`__init__<openbci_interface.cyton.Cyton.__init__>`: .
-        """
-        if self.is_open and self._close_serial:
-            _LG.info('Closing connection ...')
-            self._serial.close()
-            _LG.info('Connection closed.')
-
-    def write(self, value):
-        """Write string to serial port.
-
-        Parameters
-        ----------
-        value : bytes
-            Value to write to serial port.
-        """
-        _LG.debug(value)
-        self._serial.write(value)
-
-    def read(self, size=1):
-        """Read bytestring from serial port.
-
-        Parameters
-        ----------
-        Size : int
-            Number of bytes to read.
-
-        Returns
-        -------
-        bytes
-            Bytes read from the port.
-        """
-        value = self._serial.read(size)
-        _LG.debug(value)
-        return value
 
     def read_message(self):
         """Read until ``$$$`` is found or timeout occurs.
@@ -209,12 +142,20 @@ class Cyton:
         Returns
         -------
         str
-            Message received from the board. If timeout occurs,
-            the returnes string might not end with ``$$$``.
+            Message received from the board.
+
+        Raises
+        ------
+        :class:`UnexpectedMessageFormat<openbci_interface.exception.UnexpectedMessageFormat>`
+            The message received from the board does not end with ``$$$``
+            (which is likely due to timeout).
+
+        :class:`DeviceNotConnected<openbci_interface.exception.DeviceNotConnected>`
+            Serial connection is working, but no board is avaialable.
         """
-        msg = self._serial.read_until(b'$$$')
-        _LG.debug(msg)
-        msg = msg.decode('utf-8', errors='replace')
+        msg = self._board.read_message()
+        _LG.debug('    %s', msg)
+        msg = msg.decode('utf-8', errors='ignore')
         util.validate_message(msg)
         for line in msg.split('\n'):
             _LG.info('   %s', line)
@@ -228,7 +169,7 @@ class Cyton:
         http://docs.openbci.com/Hardware/03-Cyton_Data_Format#cyton-data-format-startup
         """
         _LG.info('Resetting board...')
-        self.write(b'v')
+        self._board.reset_board()
         self.board_info = self.read_message()
         self.daisy_attached = 'Daisy' in self.board_info
 
@@ -245,7 +186,7 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-get-version
         """
         _LG.info('Getting firmware version')
-        self.write(b'V')
+        self._board.query_firmware_version()
         self.firmware_version = self.read_message().replace('$$$', '')
         return self.firmware_version
 
@@ -263,14 +204,14 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-board-mode
         """
         _LG.info('Getting board mode...')
-        self.write(b'//')
+        self._board.query_board_mode()
         message = self.read_message()
+        self.board_mode = None
         matched = re.search(r'.*\s(\S+)\$\$\$', message)
         if matched:
             self.board_mode = matched.group(1)
         else:
-            _LG.warning(
-                'Failed to parse board mode from the message; %s', message)
+            _LG.warning('Failed to parse board mode; %s', message)
         return self.board_mode
 
     def set_board_mode(self, mode):
@@ -301,26 +242,29 @@ class Cyton:
         }
         if mode not in vals:
             raise ValueError('Board mode must be one of %s' % vals.keys())
-        command = b'/' + vals[mode]
-        self.write(command)
+        self._board.set_board_mode(vals[mode])
+        self.read_message()
         self.board_mode = mode
-        return self.read_message()
+        return self.board_mode
 
     def attach_daisy(self):
         """Attach Daisy.
 
-        After successful attach, :ivar:`daisy_attached` is set to True.
+        After successful attach, ``daisy_attached`` is set to True.
 
         .. note::
            On reset, the OpenBCI Cyton board will default to 16 channel if
            Daisy module is present.
            So this method is only useful for re-attaching Daisy.
 
+        References
+        ----------
+        http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-16-channel-commands-select-maximum-channel-number
         """
         if self.daisy_attached:
             _LG.warning('Daisy already attached.')
             return
-        self.write(b'C')
+        self._board.attach_daisy()
         message = self.read_message()
         pattern = r'[\D]*(\d{1,2})\$\$\$'
         n_channels = int(re.search(pattern, message).group(1))
@@ -329,6 +273,12 @@ class Cyton:
     def detach_daisy(self):
         """Detach Daisy.
 
+        After this method is called, ``daisy_attached`` is set to False.
+
+        .. note::
+           On reset, the OpenBCI Cyton board will sniff for the Daisy Module,
+           and if it is present, it will default to 16 channel capability.
+
         References
         ----------
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-16-channel-commands-select-maximum-channel-number
@@ -336,9 +286,8 @@ class Cyton:
         if not self.daisy_attached:
             _LG.warning('Daisy not attached.')
             return
-        self.write(b'c')
-        if self.daisy_attached or self.wifi_attached:
-            self.read_message()
+        self._board.detach_daisy()
+        self.read_message()
         self.daisy_attached = False
 
     def get_sample_rate(self):
@@ -346,16 +295,17 @@ class Cyton:
 
         Returns
         -------
-        int
-            Sample rate.
+        int or None
+            Sample rate on successful parse, else None.
 
         References
         ----------
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-sample-rate
         """
         _LG.info('Getting sample rate...')
-        self.write(b'~~')
-        self.sample_rate = _parse_sample_rate(self.read_message())
+        self._board.query_sample_rate()
+        message = self.read_message()
+        self.sample_rate = _parse_sample_rate(message)
         return self.sample_rate
 
     def set_sample_rate(self, sample_rate):
@@ -376,8 +326,13 @@ class Cyton:
 
         Returns
         -------
-        int
-            The resulting sample rate.
+        int or None
+            Sample rate on successful parse, else None.
+
+        Raises
+        ------
+        ValueError
+            When the provided ``sample_rate`` is invalid.
 
         References
         ----------
@@ -385,27 +340,20 @@ class Cyton:
         """
         _LG.info('Setting sample rate: %s', sample_rate)
         vals = {
-            250: b'6',
-            500: b'5',
-            1000: b'4',
-            2000: b'3',
-            4000: b'2',
-            8000: b'1',
-            16000: b'0',
+            250: b'6', 500: b'5', 1000: b'4',
+            2000: b'3', 4000: b'2', 8000: b'1', 16000: b'0',
         }
         if sample_rate not in vals:
             raise ValueError('Sample rate must be one of %s' % vals.keys())
-        command = b'~' + vals[sample_rate]
-        self.write(command)
-        self.sample_rate = _parse_sample_rate(self.read_message())
+        self._board.set_sample_rate(vals[sample_rate])
+        message = self.read_message()
+        self.sample_rate = _parse_sample_rate(message)
         return self.sample_rate
 
     def attach_wifi(self):
-        """Try to attach WiFi shield.
+        """Attach WiFi shield.
 
-        Returns
-        -------
-        None
+        After successful attachment, ``wifi_attached`` is set to True.
 
         Raises
         ------
@@ -417,17 +365,19 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-wifi-shield-commands
         """
         if self.wifi_attached:
-            _LG.warning('WiFi already attached.')
+            _LG.warning('WiFi shield already attached.')
             return
         _LG.info('Attaching WiFi shield...')
-        self.write(b'{')
+        self._board.attach_wifi()
         message = self.read_message()
         if 'failure' in message.lower():
             raise RuntimeError(message)
         self.wifi_attached = True
 
     def detach_wifi(self):
-        """Try to detach WiFi shield.
+        """Detach WiFi shield.
+
+        After successful detachment, ``wifi_attached`` is set to False.
 
         Returns
         -------
@@ -443,10 +393,10 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-wifi-shield-commands
         """
         if not self.wifi_attached:
-            _LG.warning('No WiFi to detach.')
+            _LG.warning('No WiFi shield to detach.')
             return
         _LG.info('Detaching WiFi shield...')
-        self.write(b'}')
+        self._board.detach_wifi()
         message = self.read_message()
         if 'failure' in message.lower():
             raise RuntimeError(message)
@@ -465,7 +415,7 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-wifi-shield-commands
         """
         _LG.info('Getting WiFi shield status.')
-        self.write(b':')
+        self._board.query_wifi_status()
         return self.read_message()
 
     def reset_wifi(self):
@@ -480,9 +430,9 @@ class Cyton:
         ----------
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v300-new-commands-wifi-shield-commands
         """
+        self._board.reset_wifi()
         _LG.info('Resetting WiFi shield.')
-        self.write(b';')
-        self.read_message()
+        return self.read_message()
 
     def enable_channel(self, channel):
         """Turn on channel for sample acquisition
@@ -497,27 +447,15 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-16-channel-commands-turn-channels-on
         """
         command = {
-            1: b'!',
-            2: b'@',
-            3: b'#',
-            4: b'$',
-            5: b'%',
-            6: b'^',
-            7: b'&',
-            8: b'*',
-            9: b'Q',
-            10: b'W',
-            11: b'E',
-            12: b'R',
-            13: b'T',
-            14: b'Y',
-            15: b'U',
-            16: b'I',
+            1: b'!', 2: b'@', 3: b'#', 4: b'$',
+            5: b'%', 6: b'^', 7: b'&', 8: b'*',
+            9: b'Q', 10: b'W', 11: b'E', 12: b'R',
+            13: b'T', 14: b'Y', 15: b'U', 16: b'I',
         }
         if channel not in command:
             raise ValueError('`channel` value must be in range of [1, 8]')
         _LG.info('Enabling channel: %s', channel)
-        self.write(command[channel])
+        self._board.enable_channel(command[channel])
         self.channel_configs[channel-1].enabled = True
 
     def disable_channel(self, channel):
@@ -533,27 +471,15 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-16-channel-commands-turn-channels-off
         """
         command = {
-            1: b'1',
-            2: b'2',
-            3: b'3',
-            4: b'4',
-            5: b'5',
-            6: b'6',
-            7: b'7',
-            8: b'8',
-            9: b'q',
-            10: b'w',
-            11: b'e',
-            12: b'r',
-            13: b't',
-            14: b'y',
-            15: b'u',
-            16: b'i',
+            1: b'1', 2: b'2', 3: b'3', 4: b'4',
+            5: b'5', 6: b'6', 7: b'7', 8: b'8',
+            9: b'q', 10: b'w', 11: b'e', 12: b'r',
+            13: b't', 14: b'y', 15: b'u', 16: b'i',
         }
         if channel not in command:
             raise ValueError('`channel` value must be in range of [1, 8]')
         _LG.info('Disabling channel: %s', channel)
-        self.write(command[channel])
+        self._board.disable_channel(command[channel])
         self.channel_configs[channel-1].enabled = False
 
     def configure_channel(
@@ -598,16 +524,15 @@ class Cyton:
             input_type=input_type, bias=bias, srb2=srb2, srb1=srb1,
         )
         _LG.info('Configuring channel: %s', channel)
-        self.write(command)
+        self._board.configure_channel(command)
         self.channel_configs[channel-1].set_config(
             power_down=power_down, gain=gain,
             input_type=input_type, bias=bias, srb2=srb2, srb1=srb1,
         )
         if not self.streaming or self.wifi_attached:
-            msg = self.read_message()
-            if 'failure' in msg.lower():
-                raise RuntimeError(msg)
-            return msg
+            message = self.read_message()
+            if 'failure' in message.lower():
+                raise RuntimeError(message)
 
     def start_streaming(self):
         """Start streaming data.
@@ -617,7 +542,7 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-command-set-stream-data-commands
         """
         _LG.info('Start streaming.')
-        self.write(b'b')
+        self._board.start_streaming()
         self.streaming = True
         if self.wifi_attached:
             self.read_message()
@@ -630,19 +555,13 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-command-set-stream-data-commands
         """
         _LG.info('Stop streaming.')
-        self.write(b's')
+        self._board.stop_streaming()
         self.streaming = False
         if self.wifi_attached:
             self.read_message()
 
     def enable_timestamp(self):
         """Enable timestamp
-
-        Returns
-        -------
-        str or None
-            If board is not streaming, then confirmation message is returned.
-            Otherwise, None is returned.
 
         References
         ----------
@@ -656,31 +575,23 @@ class Cyton:
 
         """
         _LG.info('Enabling timestamp.')
-        self.write(b'<')
+        self._board.enable_timestamp()
         if not self.streaming:
-            return self.read_message()
-        return None
+            self.read_message()
 
     def disable_timestamp(self):
         """Disable timestamp
-
-        Returns
-        -------
-        str or None
-            If board is not streaming, then confirmation message is returned.
-            Otherwise, None is returned.
 
         References
         ----------
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-firmware-v200-new-commands-time-stamping
         """
         _LG.info('Disabling timestamp.')
-        self.write(b'>')
+        self._board.disable_timestamp()
         if not self.streaming:
-            return self.read_message()
-        return None
+            self.read_message()
 
-    def set_channels_default(self):
+    def reset_channels(self):
         """Set all channels to default configuration.
 
         References
@@ -688,7 +599,7 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-command-set-default-channel-settings
         """
         _LG.info('Setting all channels to default.')
-        self.write(b'd')
+        self._board.reset_channels()
         self.read_message()
 
     def get_default_settings(self):
@@ -705,7 +616,7 @@ class Cyton:
         http://docs.openbci.com/OpenBCI%20Software/04-OpenBCI_Cyton_SDK#openbci-cyton-sdk-command-set-channel-setting-commands
         """
         _LG.info('Getting default channel settings.')
-        self.write(b'D')
+        self._board.query_default_settings()
         val = self.read_message().replace('$$$', '')
 
         power_down = {'0': 'ON', '1': 'OFF'}[val[0]]
@@ -841,7 +752,7 @@ class Cyton:
     def _wait_start_byte(self):
         n_skipped = 0
         while True:
-            val = self._serial.read()
+            val = self._board.read()
             if not val:
                 raise exception.SampleAcquisitionTimeout(
                     'Time out occurred while waiting for a start byte.')
@@ -852,7 +763,7 @@ class Cyton:
             _LG.warning('Skipped %d bytes at start.', n_skipped)
 
     def _read_packet_id(self):
-        return struct.unpack('B', self._serial.read())[0]
+        return struct.unpack('B', self._board.read())[0]
 
     def _read_eeg_sample(self, i):
         gain = self.channel_configs[i].gain
@@ -862,16 +773,16 @@ class Cyton:
             )
             gain = 24
         scale = _get_eeg_scale(gain)
-        return _unpack_24bit_signed_int(self._serial.read(3)) * scale
+        return _unpack_24bit_signed_int(self._board.read(3)) * scale
 
     def _read_eeg_data(self):
         return [self._read_eeg_sample(i) for i in range(8)]
 
     def _read_aux_data(self):
-        return [self._serial.read(2) for _ in range(self.num_aux)]
+        return [self._board.read(2) for _ in range(self.num_aux)]
 
     def _read_stop_byte(self):
-        return struct.unpack('B', self._serial.read())[0]
+        return struct.unpack('B', self._board.read())[0]
 
     ###########################################################################
     # Higher level function
@@ -884,7 +795,7 @@ class Cyton:
             Message received when issueing :func:`reset` method.
         """
         wait_time = 0.1  # value picked up randomly without logical meaning
-        self.open()
+        self._board.open()
         self.reset_board()
         self.get_firmware_version()
         self.set_board_mode(board_mode)
@@ -902,4 +813,4 @@ class Cyton:
         """Stop streaming if necessary then close connection"""
         if self.streaming:
             self.stop_streaming()
-        self.close()
+        self._board.close()

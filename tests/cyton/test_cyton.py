@@ -10,7 +10,7 @@ pytestmark = pytest.mark.cyton
 def test_attributes():
     """Cyton board has 8 EEG channels and 3 AUX channels"""
     board = cyton.Cyton(port='foo')
-    assert cyton.Cyton.num_aux == 3
+    assert board.num_aux == 3
     board.daisy_attached = False
     assert board.num_eeg == 8
     board.daisy_attached = True
@@ -166,7 +166,7 @@ class TestCytonCommandSet:
         cyton_mock.serial.open()
         cyton_mock.serial.patterns = [
             (b'd', b'updating channel settings to default$$$')]
-        cyton_mock.board.set_channels_default()
+        cyton_mock.board.reset_channels()
 
     @staticmethod
     def test_get_default_settings(cyton_mock):

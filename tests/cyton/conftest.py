@@ -4,7 +4,7 @@ from collections import namedtuple
 
 import pytest
 import serial as pyserial
-from openbci_interface import cyton
+from openbci_interface import cyton, serial_util
 
 _LG = logging.getLogger(__name__)
 
@@ -132,9 +132,9 @@ def cyton_patch(mocker):
     Use this class when you want to test Cyton(port, baudrate, timeout)
     construction pattern.
     """
-    mocker.patch.object(cyton.serial, 'Serial', SerialMock)
+    mocker.patch.object(serial_util.serial, 'Serial', SerialMock)
     board = cyton.Cyton(port='loop://')
-    serial = board._serial
+    serial = board._board._serial
     BoardAndSerial = namedtuple('BoardAndSerial', ['board', 'serial'])
     yield BoardAndSerial(board, serial)
     serial.validate_no_message_in_buffer()
