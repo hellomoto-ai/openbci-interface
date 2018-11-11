@@ -30,7 +30,7 @@ def test_cycle(sample_rate):
     board.daisy_attached = False
     assert board.cycle == 1 / sample_rate
     board.daisy_attached = True
-    assert board.cycle == 1 / sample_rate / 2
+    assert board.cycle == 1 / sample_rate * 2
 
 
 @pytest.mark.cyton_command_set
