@@ -36,18 +36,20 @@ def list_devices(filter_regex='OpenBCI', timeout=2):
         Name of the device found.
     """
     devices = [p.device for p in serial.tools.list_ports.comports()]
-    _LG.debug('Found %d COM ports.', len(devices))
+    _LG.info('Found %d COM ports. %s', len(devices), devices)
     for device in devices:
         msg = _get_firmware_string(device, timeout=timeout)
-        _LG.debug('Message: %s', repr(msg))
-        if re.search(filter_regex, msg):
-            yield device
-        elif 'Device failed to poll Host' in msg:
-            _LG.warning(
+        if 'Device failed to poll Host' in msg:
+            _LG.error(
                 'Found USB dongle at "%s", '
                 'but it failed to poll message from a board; %s',
                 device, repr(msg)
             )
+        elif re.search(filter_regex, msg):
+            _LG.info('Matched   [%s] %s "%s"', filter_regex, device, msg)
+            yield device
+        else:
+            _LG.info('Unmatched [%s] %s "%s"', filter_regex, device, msg)
 
 
 def validate_message(message):

@@ -56,10 +56,9 @@ import time
 from openbci_interface import Cyton
 
 sample_rate = 250
-baudrate = 115200
 port = '/dev/cu.usbserial-DM00CXN8'
 
-with Cython(port, baudrate) as board:
+with Cython(port) as board:
     board.set_board_mode('default')
     board.set_sample_rate(sample_rate)
     board.start_streaming()

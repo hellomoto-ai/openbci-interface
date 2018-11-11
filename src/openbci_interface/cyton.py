@@ -73,8 +73,17 @@ class Cyton:
 
     Parameters
     ----------
-    serial : serial.Serial
+    serial : serial.Serial, str or dict
         Serial object used to communicate with board.
+        If str object is passed, it is interpreted as port and a
+        new Serial object is constructed.
+        If dict object is passed, it is passed to constructor of
+        serial.Serial class as keyword arguments.
+
+    close_on_finalize : bool
+        If True, underlying serial connection is closed when
+        :func:`finalize` is called.
+
 
     :cvar int num_aux: The number of AUX channels. (3)
 
@@ -124,9 +133,14 @@ class Cyton:
 
     num_aux = 3  # The number of AUX channels.
 
-    def __init__(self, serial):
+    def __init__(self, serial, close_on_finalize=True):
+        if isinstance(serial, str):
+            serial = serial.Serial(port=serial, baudrate=115200, timeout=2)
+        elif isinstance(serial, dict):
+            serial = serial.Serial(**serial)
         self._serial = serial
         self._board = CytonBoard(self._serial)
+        self._close_on_finalize = close_on_finalize
 
         # Public (read-only) attributes
         # Since a serial communication must happen to alter the state of
@@ -777,3 +791,5 @@ class Cyton:
         """Stop streaming if necessary then close connection"""
         if self.streaming:
             self.stop_streaming()
+        if self._close_on_finalize:
+            self._serial.close()
