@@ -19,6 +19,20 @@ def test_attributes():
     assert board.num_eeg == 16
 
 
+@pytest.mark.parametrize(
+    'sample_rate',
+    [250, 500, 1000, 2000, 4000, 8000, 16000]
+)
+def test_cycle(sample_rate):
+    """Cyton acquisition cycle is halved when Daisy is attached"""
+    board = cyton.Cyton(None)
+    board.sample_rate = sample_rate
+    board.daisy_attached = False
+    assert board.cycle == 1 / sample_rate
+    board.daisy_attached = True
+    assert board.cycle == 1 / sample_rate / 2
+
+
 @pytest.mark.cyton_command_set
 class TestCytonCommandSet:
     """Test Cyton SDK commands
