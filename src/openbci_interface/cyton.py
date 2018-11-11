@@ -160,6 +160,11 @@ class Cyton:
         self.daisy_attached = False
 
     @property
+    def cycle(self):
+        """Time (in sec) to take one sample acquisition over all channels"""
+        return 1 / self.sample_rate / (1 + int(self.daisy_attached))
+
+    @property
     def num_eeg(self):
         """The number of EEG channels. 16 if Daisy is attached, otherwise 8"""
         return 16 if self.daisy_attached else 8

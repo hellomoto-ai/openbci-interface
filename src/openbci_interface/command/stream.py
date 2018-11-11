@@ -58,12 +58,12 @@ def main(args):
         board.get_sample_rate()
         board.start_streaming()
 
-        period = 0.85 / board.sample_rate
-        unit_wait = period / 10.0
+        cycle = 0.85 * board.cycle
+        unit_wait = cycle / 10.0
         last_acquired = time.time()
         while True:
             now = time.time()
-            if now - last_acquired < period:
+            if now - last_acquired < cycle:
                 time.sleep(unit_wait)
                 continue
             sample = board.read_sample()
