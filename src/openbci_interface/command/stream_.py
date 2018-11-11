@@ -53,24 +53,28 @@ def main(args):
 
     with Cyton(_get_serial(args)) as board:
         board.set_board_mode(args.board_mode)
-        board.get_board_mode()
         board.set_sample_rate(args.sample_rate)
-        board.get_sample_rate()
         board.start_streaming()
+        try:
+            _run(board)
+        except KeyboardInterrupt:
+            pass
 
-        cycle = 0.85 * board.cycle
-        unit_wait = cycle / 10.0
-        last_acquired = time.time()
-        while True:
-            now = time.time()
-            if now - last_acquired < cycle:
-                time.sleep(unit_wait)
-                continue
-            sample = board.read_sample()
-            last_acquired = now
-            sys.stdout.write(json.dumps(sample))
-            sys.stdout.write('\n')
-            sys.stdout.flush()
+
+def _run(board):
+    cycle = 0.85 * board.cycle
+    unit_wait = cycle / 10.0
+    last_acquired = time.time()
+    while True:
+        now = time.time()
+        if now - last_acquired < cycle:
+            time.sleep(unit_wait)
+            continue
+        sample = board.read_sample()
+        last_acquired = now
+        sys.stdout.write(json.dumps(sample))
+        sys.stdout.write('\n')
+        sys.stdout.flush()
 
 
 def _get_serial(args):
