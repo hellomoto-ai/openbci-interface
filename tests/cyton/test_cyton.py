@@ -2,7 +2,7 @@
 import pytest
 from openbci_interface import cyton, exception
 
-from tests import constants
+from tests import messages
 
 # pylint: disable=protected-access,invalid-name
 
@@ -162,8 +162,7 @@ class TestCytonCommandSet:
     # Default channel settings
     @staticmethod
     def test_channels_default(cyton_mock):
-        cyton_mock._serial.patterns = [
-            (b'd', b'updating channel settings to default$$$')]
+        cyton_mock._serial.patterns = [(b'd', messages.RESET_CHANNEL)]
         cyton_mock.reset_channels()
 
     @staticmethod
@@ -189,7 +188,7 @@ class TestCytonCommandSet:
 
     @staticmethod
     def test_start_streaming_wifi(cyton_mock):
-        cyton_mock._serial.patterns = [(b'b', b'Stream started$$$')]
+        cyton_mock._serial.patterns = [(b'b', messages.STREAM_STARTED)]
         cyton_mock.wifi_attached = True
         cyton_mock.start_streaming()
 
@@ -200,7 +199,7 @@ class TestCytonCommandSet:
 
     @staticmethod
     def test_stop_streaming_wifi(cyton_mock):
-        cyton_mock._serial.patterns = [(b's', b'Stream stopped$$$')]
+        cyton_mock._serial.patterns = [(b's', messages.STREAM_STOPPED)]
         cyton_mock.wifi_attached = True
         cyton_mock.stop_streaming()
 
@@ -208,15 +207,13 @@ class TestCytonCommandSet:
     # Misc
     @staticmethod
     def test_reset_board(cyton_mock):
-        cyton_mock._serial.patterns = [
-            (b'v', constants.CYTON_V3_FIRMWARE_STRING)]
+        cyton_mock._serial.patterns = [(b'v', messages.CYTON_V3_INFO)]
         cyton_mock.reset_board()
         assert not cyton_mock.daisy_attached
 
     @staticmethod
     def test_reset_board_daisy(cyton_mock):
-        cyton_mock._serial.patterns = [
-            (b'v', constants.CYTON_V3_WITH_DAISY_FIRMWARE_STRING)]
+        cyton_mock._serial.patterns = [(b'v', messages.CYTON_V3_WITH_DAISY_INFO)]
         cyton_mock.reset_board()
         assert cyton_mock.daisy_attached
 
@@ -228,25 +225,25 @@ class TestCyton16ChannelCommandSet:
     """
     @staticmethod
     def test_attach_daisy_alread_attached(cyton_mock):
-        cyton_mock._serial.patterns = [(b'C', b'16$$$')]
+        cyton_mock._serial.patterns = [(b'C', messages.DAISY_ALREADY_ATTACHED)]
         cyton_mock.attach_daisy()
         assert cyton_mock.daisy_attached
 
     @staticmethod
     def test_attach_daisy_attached(cyton_mock):
-        cyton_mock._serial.patterns = [(b'C', b'daisy attached16$$$')]
+        cyton_mock._serial.patterns = [(b'C', messages.DAISY_ATTACHED)]
         cyton_mock.attach_daisy()
         assert cyton_mock.daisy_attached
 
     @staticmethod
     def test_attach_daisy_not_attached(cyton_mock):
-        cyton_mock._serial.patterns = [(b'C', b'no daisy to attach!8$$$')]
+        cyton_mock._serial.patterns = [(b'C', messages.NO_DAISY_TO_ATTACH)]
         cyton_mock.attach_daisy()
         assert not cyton_mock.daisy_attached
 
     @staticmethod
     def test_detach_daisy_present(cyton_mock):
-        cyton_mock._serial.patterns = [(b'c', b'daisy removed$$$')]
+        cyton_mock._serial.patterns = [(b'c', messages.DAISY_REMOVED)]
         cyton_mock.daisy_attached = True
         cyton_mock.detach_daisy()
         assert not cyton_mock.daisy_attached
@@ -283,7 +280,7 @@ class TestCytonV2CommandSet:
 
     @staticmethod
     def test_enable_timestamp(cyton_mock):
-        cyton_mock._serial.patterns = [(b'<', b'Time stamp ON$$$')]
+        cyton_mock._serial.patterns = [(b'<', messages.TIMESTAMP_ON)]
         cyton_mock.enable_timestamp()
 
     @staticmethod
@@ -294,7 +291,7 @@ class TestCytonV2CommandSet:
 
     @staticmethod
     def test_disable_timestamp(cyton_mock):
-        cyton_mock._serial.patterns = [(b'>', b'Time stamp OFF$$$')]
+        cyton_mock._serial.patterns = [(b'>', messages.TIMESTAMP_OFF)]
         cyton_mock.disable_timestamp()
 
 
@@ -318,13 +315,13 @@ class TestCytonV3CommandSet:
 
     @staticmethod
     @pytest.mark.parametrize('sample_rate,pattern', [
-        (250, (b'~6', b'Success: Sample rate is 250Hz$$$')),
-        (500, (b'~5', b'Success: Sample rate is 500Hz$$$')),
-        (1000, (b'~4', b'Success: Sample rate is 1000Hz$$$')),
-        (2000, (b'~3', b'Success: Sample rate is 2000Hz$$$')),
-        (4000, (b'~2', b'Success: Sample rate is 4000Hz$$$')),
-        (8000, (b'~1', b'Success: Sample rate is 8000Hz$$$')),
-        (16000, (b'~0', b'Success: Sample rate is 16000Hz$$$')),
+        (250, (b'~6', messages.SAMPLE_RATE_250)),
+        (500, (b'~5', messages.SAMPLE_RATE_500)),
+        (1000, (b'~4', messages.SAMPLE_RATE_1000)),
+        (2000, (b'~3', messages.SAMPLE_RATE_2000)),
+        (4000, (b'~2', messages.SAMPLE_RATE_4000)),
+        (8000, (b'~1', messages.SAMPLE_RATE_8000)),
+        (16000, (b'~0', messages.SAMPLE_RATE_16000)),
     ])
     def test_set_sample_rate(cyton_mock, sample_rate, pattern):
         cyton_mock._serial.patterns = [pattern]
@@ -346,57 +343,63 @@ class TestCytonV3CommandSet:
 
     @staticmethod
     @pytest.mark.parametrize('mode,pattern', [
-        ('default', (b'/0', b'Success: default$$$')),
-        ('debug', (b'/1', b'Success: debug$$$')),
-        ('analog', (b'/2', b'Success: analog$$$')),
-        ('digital', (b'/3', b'Success: digital$$$')),
-        ('marker', (b'/4', b'Success: marker$$$')),
+        ('default', (b'/0', messages.BOARD_MODE_DEFAULT)),
+        ('debug', (b'/1', messages.BOARD_MODE_DEBUG)),
+        ('analog', (b'/2', messages.BOARD_MODE_ANALOG)),
+        ('digital', (b'/3', messages.BOARD_MODE_DIGITAL)),
+        ('marker', (b'/4', messages.BOARD_MODE_MARKER)),
     ])
     def test_set_board_mode(cyton_mock, mode, pattern):
         cyton_mock._serial.patterns = [pattern]
         cyton_mock.set_board_mode(mode)
+        assert cyton_mock.board_mode == mode
 
     ###########################################################################
     # WiFi
     @staticmethod
     def test_attach_wifi_success(cyton_mock):
-        cyton_mock._serial.patterns = [(b'{', b'Success: Wifi attached$$$')]
+        cyton_mock._serial.patterns = [(b'{', messages.WIFI_ATTACH_SUCCESS)]
         cyton_mock.attach_wifi()
+        assert cyton_mock.wifi_attached
 
     @staticmethod
     def test_attach_wifi_failure(cyton_mock):
-        cyton_mock._serial.patterns = [(b'{', b'Failure: Wifi not attached$$$')]
+        cyton_mock._serial.patterns = [(b'{', messages.WIFI_ATTACH_FAILURE)]
         with pytest.raises(RuntimeError):
             cyton_mock.attach_wifi()
 
     @staticmethod
     def test_detach_wifi_success(cyton_mock):
-        cyton_mock._serial.patterns = [(b'}', b'Success: Wifi removed$$$')]
+        cyton_mock._serial.patterns = [(b'}', messages.WIFI_REMOVE_SUCCESS)]
         cyton_mock.wifi_attached = True
         cyton_mock.detach_wifi()
+        assert not cyton_mock.wifi_attached
 
     @staticmethod
     def test_detach_wifi_failure(cyton_mock):
-        cyton_mock._serial.patterns = [(b'}', b'Failure: Wifi not removed$$$')]
+        cyton_mock._serial.patterns = [(b'}', messages.WIFI_REMOVE_FAILURE)]
         cyton_mock.wifi_attached = True
         with pytest.raises(RuntimeError):
             cyton_mock.detach_wifi()
+        assert cyton_mock.wifi_attached
 
     @staticmethod
     def test_get_wifi_status_present(cyton_mock):
-        cyton_mock._serial.patterns = [(b':', b'Wifi present$$$')]
-        cyton_mock.wifi_attached = True
+        cyton_mock._serial.patterns = [(b':', messages.WIFI_PRESENT)]
+        cyton_mock.wifi_attached = False
         cyton_mock.get_wifi_status()
+        assert cyton_mock.wifi_attached
 
     @staticmethod
     def test_get_wifi_status_not_present(cyton_mock):
-        cyton_mock._serial.patterns = [
-            (b':', b'Wifi not present, send { to attach the shield$$$')]
+        cyton_mock._serial.patterns = [(b':', messages.WIFI_NOT_PRESENT)]
+        cyton_mock.wifi_attached = True
         cyton_mock.get_wifi_status()
+        assert not cyton_mock.wifi_attached
 
     @staticmethod
     def test_reset_wifi(cyton_mock):
-        cyton_mock._serial.patterns = [(b';', b'Wifi soft reset$$$')]
+        cyton_mock._serial.patterns = [(b';', messages.WIFI_RESET)]
         cyton_mock.reset_wifi()
 
     ###########################################################################
@@ -415,19 +418,19 @@ class TestCytonContextManager:
     def test_context_manager(cyton_mock):
         """`initialize` is called on __enter__"""
         cyton_mock._serial.patterns = [
-            (b'v', constants.CYTON_V3_FIRMWARE_STRING),
+            (b'v', messages.CYTON_V3_INFO),
             (b'V', b'Firmware: v3.1.1$$$'),
-            (b'/0', b'Success: default$$$'),
-            (b'~6', b'Success: Sample rate is 250Hz$$$'),
+            (b'/0', messages.BOARD_MODE_DEFAULT),
+            (b'~6', messages.SAMPLE_RATE_250),
             (b'D', b'060110$$$'),
-            (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
-            (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),
-            (b'#', None), (b'x3060110X', b'Success: Channel set for 3$$$'),
-            (b'$', None), (b'x4060110X', b'Success: Channel set for 4$$$'),
-            (b'%', None), (b'x5060110X', b'Success: Channel set for 5$$$'),
-            (b'^', None), (b'x6060110X', b'Success: Channel set for 6$$$'),
-            (b'&', None), (b'x7060110X', b'Success: Channel set for 7$$$'),
-            (b'*', None), (b'x8060110X', b'Success: Channel set for 8$$$'),
+            (b'!', None), (b'x1060110X', messages.SET_CHANNEL_1),
+            (b'@', None), (b'x2060110X', messages.SET_CHANNEL_2),
+            (b'#', None), (b'x3060110X', messages.SET_CHANNEL_3),
+            (b'$', None), (b'x4060110X', messages.SET_CHANNEL_4),
+            (b'%', None), (b'x5060110X', messages.SET_CHANNEL_5),
+            (b'^', None), (b'x6060110X', messages.SET_CHANNEL_6),
+            (b'&', None), (b'x7060110X', messages.SET_CHANNEL_7),
+            (b'*', None), (b'x8060110X', messages.SET_CHANNEL_8),
         ]
         with cyton_mock:
             pass
@@ -436,19 +439,19 @@ class TestCytonContextManager:
     def test_context_manager_streaming(cyton_mock):
         """Streaming is stopped automatically"""
         cyton_mock._serial.patterns = [
-            (b'v', constants.CYTON_V3_FIRMWARE_STRING),
-            (b'V', b'Firmware: v3.1.1$$$'),
-            (b'/0', b'Success: default$$$'),
-            (b'~6', b'Success: Sample rate is 250Hz$$$'),
+            (b'v', messages.CYTON_V3_INFO),
+            (b'V', b'v3.1.1$$$'),
+            (b'/0', messages.BOARD_MODE_DEFAULT),
+            (b'~6', messages.SAMPLE_RATE_250),
             (b'D', b'060110$$$'),
-            (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
-            (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),
-            (b'#', None), (b'x3060110X', b'Success: Channel set for 3$$$'),
-            (b'$', None), (b'x4060110X', b'Success: Channel set for 4$$$'),
-            (b'%', None), (b'x5060110X', b'Success: Channel set for 5$$$'),
-            (b'^', None), (b'x6060110X', b'Success: Channel set for 6$$$'),
-            (b'&', None), (b'x7060110X', b'Success: Channel set for 7$$$'),
-            (b'*', None), (b'x8060110X', b'Success: Channel set for 8$$$'),
+            (b'!', None), (b'x1060110X', messages.SET_CHANNEL_1),
+            (b'@', None), (b'x2060110X', messages.SET_CHANNEL_2),
+            (b'#', None), (b'x3060110X', messages.SET_CHANNEL_3),
+            (b'$', None), (b'x4060110X', messages.SET_CHANNEL_4),
+            (b'%', None), (b'x5060110X', messages.SET_CHANNEL_5),
+            (b'^', None), (b'x6060110X', messages.SET_CHANNEL_6),
+            (b'&', None), (b'x7060110X', messages.SET_CHANNEL_7),
+            (b'*', None), (b'x8060110X', messages.SET_CHANNEL_8),
             (b'b', None),
             (b's', None),
         ]
@@ -459,27 +462,27 @@ class TestCytonContextManager:
     def test_context_manager_daisy(cyton_mock):
         """16 channels are initialized when Daisy"""
         cyton_mock._serial.patterns = [
-            (b'v', constants.CYTON_V3_WITH_DAISY_FIRMWARE_STRING),
-            (b'V', b'Firmware: v3.1.1$$$'),
-            (b'/0', b'Success: default$$$'),
-            (b'~6', b'Success: Sample rate is 250Hz$$$'),
+            (b'v', messages.CYTON_V3_WITH_DAISY_INFO),
+            (b'V', b'v3.1.1$$$'),
+            (b'/0', messages.BOARD_MODE_DEFAULT),
+            (b'~6', messages.SAMPLE_RATE_250),
             (b'D', b'060110$$$'),
-            (b'!', None), (b'x1060110X', b'Success: Channel set for 1$$$'),
-            (b'@', None), (b'x2060110X', b'Success: Channel set for 2$$$'),
-            (b'#', None), (b'x3060110X', b'Success: Channel set for 3$$$'),
-            (b'$', None), (b'x4060110X', b'Success: Channel set for 4$$$'),
-            (b'%', None), (b'x5060110X', b'Success: Channel set for 5$$$'),
-            (b'^', None), (b'x6060110X', b'Success: Channel set for 6$$$'),
-            (b'&', None), (b'x7060110X', b'Success: Channel set for 7$$$'),
-            (b'*', None), (b'x8060110X', b'Success: Channel set for 8$$$'),
-            (b'Q', None), (b'xQ060110X', b'Success: Channel set for 9$$$'),
-            (b'W', None), (b'xW060110X', b'Success: Channel set for 10$$$'),
-            (b'E', None), (b'xE060110X', b'Success: Channel set for 11$$$'),
-            (b'R', None), (b'xR060110X', b'Success: Channel set for 12$$$'),
-            (b'T', None), (b'xT060110X', b'Success: Channel set for 13$$$'),
-            (b'Y', None), (b'xY060110X', b'Success: Channel set for 14$$$'),
-            (b'U', None), (b'xU060110X', b'Success: Channel set for 15$$$'),
-            (b'I', None), (b'xI060110X', b'Success: Channel set for 16$$$'),
+            (b'!', None), (b'x1060110X', messages.SET_CHANNEL_1),
+            (b'@', None), (b'x2060110X', messages.SET_CHANNEL_2),
+            (b'#', None), (b'x3060110X', messages.SET_CHANNEL_3),
+            (b'$', None), (b'x4060110X', messages.SET_CHANNEL_4),
+            (b'%', None), (b'x5060110X', messages.SET_CHANNEL_5),
+            (b'^', None), (b'x6060110X', messages.SET_CHANNEL_6),
+            (b'&', None), (b'x7060110X', messages.SET_CHANNEL_7),
+            (b'*', None), (b'x8060110X', messages.SET_CHANNEL_8),
+            (b'Q', None), (b'xQ060110X', messages.SET_CHANNEL_9),
+            (b'W', None), (b'xW060110X', messages.SET_CHANNEL_10),
+            (b'E', None), (b'xE060110X', messages.SET_CHANNEL_11),
+            (b'R', None), (b'xR060110X', messages.SET_CHANNEL_12),
+            (b'T', None), (b'xT060110X', messages.SET_CHANNEL_13),
+            (b'Y', None), (b'xY060110X', messages.SET_CHANNEL_14),
+            (b'U', None), (b'xU060110X', messages.SET_CHANNEL_15),
+            (b'I', None), (b'xI060110X', messages.SET_CHANNEL_16),
         ]
         with cyton_mock:
             pass
