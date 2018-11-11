@@ -118,8 +118,10 @@ class Cyton:
        Use :func:`num_eeg` to get the number of valid channels.
 
     :ivar bool daisy_attached:
-       True if Daisy module is detected in :func:`reset_board`,
-       otherwise False.
+       Set to True if Daisy module is detected in :func:`reset_board`,
+       or when the module is re-attached with :func:`attach_daisy`.
+       False when no Daisy module is detected of one is detached with
+       :func:`detach_daisy`.
 
     References
     ----------
@@ -663,36 +665,35 @@ class Cyton:
         """Context manager for open/close serial connection automatically.
 
         By utilizing context manager with ``with`` statement, board is
-        initialized automatically after serial connection is established.
-        Streaming is stopped and serial connection is closed automatically
-        at exit.
+        initialized automatically, then at exit streaming is stopped and
+        serial connection is closed (based on ``close_on_finalize`` value)
+        automatically.
 
         .. code-block:: python
 
-           with Cyton(port, baudrate, timeout) as board:
+           with Cyton(port) as board:
                # no need to call board.initialize()
                board.start_streaming()
                board.read_sample()
                # no need to call board.stop_streaming()
 
-        However when passing an already-opened Serial instance to
-        :func:`Cyton<openbci_interface.cyton.Cyton>`, context manager
-        does not close the serial.
+        However when passing an already-opened Serial instance and setting
+        ``close_on_finalize`` to False, context manager does not close
+        the serial.
 
         .. code-block:: python
 
            # Passing an instance with open connection
            ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
-           with Cyton(ser) as board:
+           with Cyton(ser, close_on_finalize=False) as board:
                pass
            assert ser.is_open  # Connection is still open.
 
         .. code-block:: python
 
            # Passing an instance with connection not opened yet.
-           ser = serial.Serial(baudrate=baudrate, timeout=timeout)
-           ser.port = port
-           with Cyton(ser) as board:
+           ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+           with Cyton(ser, close_on_finalize=True) as board:
                pass
            assert not ser.is_open  # Connection is closed.
         """
@@ -766,13 +767,7 @@ class Cyton:
     ###########################################################################
     # Higher level function
     def initialize(self, board_mode='default', sample_rate=250):
-        """Initialize connection, board then configure channel to default.
-
-        Returns
-        -------
-        str
-            Message received when issueing :func:`reset` method.
-        """
+        """Initialize board, channel, sample rate to default."""
         wait_time = 0.1  # value picked up randomly without logical meaning
         self.reset_board()
         self.get_firmware_version()
