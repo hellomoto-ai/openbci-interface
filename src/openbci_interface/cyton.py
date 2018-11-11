@@ -80,9 +80,9 @@ class Cyton:
         If dict object is passed, it is passed to constructor of
         serial.Serial class as keyword arguments.
 
-    close_on_finalize : bool
+    close_on_terminate : bool
         If True, underlying serial connection is closed when
-        :func:`finalize` is called.
+        :func:`terminate` is called.
 
 
     :cvar int num_aux: The number of AUX channels. (3)
@@ -135,14 +135,14 @@ class Cyton:
 
     num_aux = 3  # The number of AUX channels.
 
-    def __init__(self, serial, close_on_finalize=True):
+    def __init__(self, serial, close_on_terminate=True):
         if isinstance(serial, str):
             serial = serial.Serial(port=serial, baudrate=115200, timeout=2)
         elif isinstance(serial, dict):
             serial = serial.Serial(**serial)
         self._serial = serial
         self._board = CytonBoard(self._serial)
-        self._close_on_finalize = close_on_finalize
+        self._close_on_terminate = close_on_terminate
 
         # Public (read-only) attributes
         # Since a serial communication must happen to alter the state of
@@ -671,7 +671,7 @@ class Cyton:
 
         By utilizing context manager with ``with`` statement, board is
         initialized automatically, then at exit streaming is stopped and
-        serial connection is closed (based on ``close_on_finalize`` value)
+        serial connection is closed (based on ``close_on_terminate`` value)
         automatically.
 
         .. code-block:: python
@@ -683,14 +683,14 @@ class Cyton:
                # no need to call board.stop_streaming()
 
         However when passing an already-opened Serial instance and setting
-        ``close_on_finalize`` to False, context manager does not close
+        ``close_on_terminate`` to False, context manager does not close
         the serial.
 
         .. code-block:: python
 
            # Passing an instance with open connection
            ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
-           with Cyton(ser, close_on_finalize=False) as board:
+           with Cyton(ser, close_on_terminate=False) as board:
                pass
            assert ser.is_open  # Connection is still open.
 
@@ -698,7 +698,7 @@ class Cyton:
 
            # Passing an instance with connection not opened yet.
            ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
-           with Cyton(ser, close_on_finalize=True) as board:
+           with Cyton(ser, close_on_terminate=True) as board:
                pass
            assert not ser.is_open  # Connection is closed.
         """
@@ -710,7 +710,7 @@ class Cyton:
 
         See :func:`__enter__<openbci_interface.cyton.Cyton.__enter__>`
         """
-        self.finalize()
+        self.terminate()
         return exc_type in [None, KeyboardInterrupt]
 
     def read_sample(self):
@@ -787,9 +787,9 @@ class Cyton:
             self.configure_channel(i + 1, **conf)
             time.sleep(wait_time)
 
-    def finalize(self):
+    def terminate(self):
         """Stop streaming if necessary then close connection"""
         if self.streaming:
             self.stop_streaming()
-        if self._close_on_finalize:
+        if self._close_on_terminate:
             self._serial.close()
