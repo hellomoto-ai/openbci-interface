@@ -162,7 +162,7 @@ class Cyton:
     @property
     def cycle(self):
         """Time (in sec) to take one sample acquisition over all channels"""
-        return 1 / self.sample_rate / (1 + int(self.daisy_attached))
+        return 1 / self.sample_rate * (1 + int(self.daisy_attached))
 
     @property
     def num_eeg(self):
