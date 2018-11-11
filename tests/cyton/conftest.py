@@ -13,7 +13,6 @@ _LG = logging.getLogger(__name__)
 def cyton_mock():
     """Instanciate Cyton with SerialMock and inspect buffer at tear down"""
     serial = SerialMock()
-    serial.open()
     yield cyton.Cyton(serial)
     serial.validate_no_message_in_buffer()
     serial.validate_all_patterns_consumed()

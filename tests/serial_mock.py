@@ -10,23 +10,18 @@ class SerialMock:
 
     Internally it uses loop back software-based connection.
     """
+    _patterns = None
+
     def __init__(self, port='loop://', timeout=0.1, baudrate=115200):
+        self._serial = pyserial.serial_for_url(
+            url='loop://', timeout=timeout, baudrate=baudrate)
+        self.is_open = True
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
 
-        self.is_open = False
-        self._serial = None
-        self._patterns = None
-
     ###########################################################################
     # Methods for mocking Serial behaviors
-    def open(self):
-        """Open serial connection"""
-        self._serial = pyserial.serial_for_url(
-            url=self.port, timeout=self.timeout, baudrate=self.baudrate)
-        self.is_open = True
-
     def close(self):
         """Pseudo clse serial connection,
 
