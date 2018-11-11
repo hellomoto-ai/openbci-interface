@@ -17,14 +17,25 @@ AUX_SCALE = 0.002 / pow(2, 4)
 
 
 def _parse_sample_rate(message):
-    pattern = r'(\d+)\s*Hz'
-    matched = re.search(pattern, message)
-    sample_rate = None
+    pattern = r'.*\s(\d+)\s*Hz\$\$\$'
+    matched = re.match(pattern, message)
+    ret = None
     if matched:
-        sample_rate = int(matched.group(1))
+        ret = int(matched.group(1))
     else:
         _LG.warning('Failed to parse sample rate; %s', message)
-    return sample_rate
+    return ret
+
+
+def _parse_board_mode(message):
+    pattern = r'.*\s(\S+)\$\$\$'
+    matched = re.match(pattern, message)
+    ret = None
+    if matched:
+        ret = matched.group(1)
+    else:
+        _LG.warning('Failed to parse board mode; %s', message)
+    return ret
 
 
 def _unpack_24bit_signed_int(raw):
@@ -206,13 +217,7 @@ class Cyton:
         """
         _LG.info('Getting board mode...')
         self._board.query_board_mode()
-        message = self.read_message()
-        self.board_mode = None
-        matched = re.search(r'.*\s(\S+)\$\$\$', message)
-        if matched:
-            self.board_mode = matched.group(1)
-        else:
-            _LG.warning('Failed to parse board mode; %s', message)
+        self.board_mode = _parse_board_mode(self.read_message())
         return self.board_mode
 
     def set_board_mode(self, mode):
@@ -222,11 +227,6 @@ class Cyton:
         ----------
         mode : str
             ``default``, ``debug``, ``analog``, ``digital`` or ``marker``
-
-        Returns
-        -------
-        str
-            Message received from the board.
 
         References
         ----------
@@ -244,9 +244,7 @@ class Cyton:
         if mode not in vals:
             raise ValueError('Board mode must be one of %s' % vals.keys())
         self._board.set_board_mode(vals[mode])
-        self.read_message()
-        self.board_mode = mode
-        return self.board_mode
+        self.board_mode = _parse_board_mode(self.read_message())
 
     def attach_daisy(self):
         """Attach Daisy.
@@ -406,6 +404,8 @@ class Cyton:
     def get_wifi_status(self):
         """Get the status of WiFi shield.
 
+        ``wifi_attached`` is updated based on the result.
+
         Returns
         -------
         str
@@ -417,7 +417,9 @@ class Cyton:
         """
         _LG.info('Getting WiFi shield status.')
         self._board.query_wifi_status()
-        return self.read_message()
+        message = self.read_message()
+        self.wifi_attached = 'not present' not in message
+        return message
 
     def reset_wifi(self):
         """Perform a soft (power) reset of the WiFi shield.
