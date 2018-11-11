@@ -696,7 +696,7 @@ class Cyton:
 
         .. code-block:: python
 
-           # Passing an instance with connection not opened yet.
+           # Passing an instance with open connection
            ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
            with Cyton(ser, close_on_terminate=True) as board:
                pass
@@ -723,11 +723,17 @@ class Cyton:
             .. code-block:: javascript
 
                {
-                 'eeg': [<channel1>, ..., <channelN>],
-                 'aux': [<channel1>, ..., <channel3>],
-                 'packet_id': int,
-                 'timestamp': float,
+                 "eeg": [<channel1>, ..., <channelN>],
+                 "aux": [<channel1>, ..., <channel3>],
+                 "packet_id": int,
+                 "timestamp": float,
+`                "valid": bool
                }
+
+
+            ``valid`` is True when received stop byte matches 0xC0.
+            When ``valid`` is False, the sample acquisition was out of sync,
+            and values are not reliable.
 
 
         .. note::
@@ -752,7 +758,9 @@ class Cyton:
         """
         sample = self._read_packet()
         if self.daisy_attached:
-            sample['eeg'].extend(self._read_packet()['eeg'])
+            sample2 = self._read_packet()
+            sample['eeg'].extend(sample2['eeg'])
+            sample['valid'] = sample['valid'] and sample2['valid']
         sample['timestamp'] = time.time()
         return sample
 
@@ -761,7 +769,8 @@ class Cyton:
         data = self._board.read_packet()
         data['eeg'] = self._parse_eeg(data['eeg'])
         data['aux'] = _parse_aux(data['stop_byte'], data['aux'])
-        return {key: data[key] for key in ['packet_id', 'eeg', 'aux']}
+        data['valid'] = data['stop_byte'] == STOP_BYTE
+        return {key: data[key] for key in ['packet_id', 'eeg', 'aux', 'valid']}
 
     def _parse_eeg(self, raw_eeg_data):
         return [
@@ -777,6 +786,7 @@ class Cyton:
         self.reset_board()
         self.get_firmware_version()
         self.set_board_mode(board_mode)
+        time.sleep(0.5)
         self.set_sample_rate(sample_rate)
         conf = self.get_default_settings()
         for i in range(self.num_eeg):

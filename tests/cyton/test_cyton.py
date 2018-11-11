@@ -540,6 +540,103 @@ class TestCytonReadSample:
             'aux': [0.054, 0.226, 0.92],
             'packet_id': 119,
             'timestamp': None,
+            'valid': True,
+        }
+        cyton_mock.start_streaming()
+        sample = cyton_mock.read_sample()
+
+        assert sample.keys() == expected.keys()
+
+        for key in sample:
+            if key != 'timestamp':
+                assert sample[key] == expected[key]
+
+    @staticmethod
+    def test_read_sample_0xC0_daisy(cyton_mock):
+        """Test acquisition of standard sample with accel"""
+        cyton_mock._serial.patterns = [(
+            b'b',
+            b'\xa0'          # Start byte
+            b'w'             # Packet ID
+            b'\x00\x00\x00'  # EEG 1
+            b'\x00\x00\x00'  # EEG 2
+            b'\x00\x00\x00'  # EEG 3
+            b'\x00\x00\x00'  # EEG 4
+            b'\x00\x00\x00'  # EEG 5
+            b'\x00\x00\x00'  # EEG 6
+            b'\x00\x00\x00'  # EEG 7
+            b'\x00\x00\x00'  # EEG 8
+            b'\x00\x00'      # AUX 1
+            b'\x00\x00'      # AUX 2
+            b'\x00\x00'      # AUX 3
+            b'\xc0'          # Stop byte
+            b'\xa0'          # Start byte
+            b'x'             # Packet ID
+            b'\x00\x00\x00'  # EEG 9
+            b'\x00\x00\x00'  # EEG 10
+            b'\x00\x00\x00'  # EEG 11
+            b'\x00\x00\x00'  # EEG 12
+            b'\x00\x00\x00'  # EEG 13
+            b'\x00\x00\x00'  # EEG 14
+            b'\x00\x00\x00'  # EEG 15
+            b'\x00\x00\x00'  # EEG 16
+            b'\x00\x00'      # AUX 1
+            b'\x00\x00'      # AUX 2
+            b'\x00\x00'      # AUX 3
+            b'\xc0'          # Stop byte
+        )]
+        expected = {
+            'eeg': [0.0] * 16,
+            'aux': [0.0] * 3,
+            'packet_id': 119,
+            'timestamp': None,
+            'valid': True,
+        }
+        cyton_mock.daisy_attached = True
+        cyton_mock.start_streaming()
+        sample = cyton_mock.read_sample()
+
+        assert sample.keys() == expected.keys()
+
+        for key in sample:
+            if key != 'timestamp':
+                assert sample[key] == expected[key]
+
+    @staticmethod
+    def test_read_sample_0xC1(cyton_mock):
+        """Test acquisition of standard sample with accel"""
+        cyton_mock._serial.patterns = [(
+            b'b',
+            b'\xa0'          # Start byte
+            b'w'             # Packet ID
+            b'\xd1+\x02'     # EEG 1
+            b'\xcd\x81\x13'  # EEG 2
+            b'\xcf\xcf\x1d'  # EEG 3
+            b'\xcf_C'        # EEG 4
+            b'\xce\xf4U'     # EEG 5
+            b'\x03_\xce'     # EEG 6
+            b'\x03U\x92'     # EEG 7
+            b'\x03\\I'       # EEG 8
+            b'\x01\xb0'      # AUX 1
+            b'\x07\x10'      # AUX 2
+            b'\x1c\xc0'      # AUX 3
+            b'\xc1'          # Stop byte
+        )]
+        expected = {
+            'eeg': [
+                -68601.57175082824,
+                -73968.47146373648,
+                -70592.24046376234,
+                -71232.26031449561,
+                -71844.11696721519,
+                4942.730658379872,
+                4884.169087906967,
+                4922.59173662564,
+            ],
+            'aux': [0.054, 0.226, 0.92],
+            'packet_id': 119,
+            'timestamp': None,
+            'valid': False,
         }
         cyton_mock.start_streaming()
         sample = cyton_mock.read_sample()
