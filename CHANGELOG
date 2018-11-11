@@ -1,3 +1,14 @@
+2018-11-10 moto<moto@hellomoto.ai>
+	* 0.6.0
+	[Cyton]
+	Changed constructor argument to create Serial object from one argument.
+	Refactored internal structure to separate Serial command and board control.
+	Renamed method `set_channels_default` to `reset_channels`.
+	[Daisy]
+	Added support for Daisy 16 channel sample acquisition.
+	Cyton board has `daisy_attached` property which dynamically changes the number of channels, `num_eeg` property.
+	[util]
+	Remove `wrap` method.
 2018-10-27 moto<moto@hellomoto.ai>
 	* 0eff254
 	[Cyton]
