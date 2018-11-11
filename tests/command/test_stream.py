@@ -1,10 +1,10 @@
 from openbci_interface.command import stream_
 
 from tests import messages
-from tests.serial_mock import SerialMock
+from tests.serial_mock import SerialMock as BaseSerialMock
 
 
-class SerialMock_(SerialMock):
+class SerialMock(BaseSerialMock):
     _patterns = iter([
         (b'v', messages.CYTON_V3_INFO),
         (b'V', b'v3.1.1$$$'),
@@ -47,7 +47,10 @@ def _raise_kbi():
 
 
 def test_stream(mocker):
-    mocker.patch('openbci_interface.command.stream_.Serial', SerialMock_)
-    mocker.patch('openbci_interface.command.stream_.sys.stdout.flush', _raise_kbi)
+    """Test ``stream`` command"""
+    mocker.patch(
+        'openbci_interface.command.stream_.Serial', SerialMock)
+    mocker.patch(
+        'openbci_interface.command.stream_.sys.stdout.flush', _raise_kbi)
     stream_.main(['--port', 'foo'])
     mocker.resetall()
