@@ -34,7 +34,7 @@ def main():
     }
     namespace, args = _parse_args(subcommands.keys())
     _init_logger(namespace.debug)
-    subcommands[namespace.command](args)
+    subcommands[namespace.command].main(args)
 
 
 def _init_logger(debug=False):
