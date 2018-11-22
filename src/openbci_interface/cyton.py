@@ -38,13 +38,13 @@ def _parse_board_mode(message):
     return ret
 
 
-def _unpack_24bit_signed_int(raw):
-    prefix = b'\xFF' if struct.unpack('3B', raw)[0] & 0x80 > 0 else b'\x00'
+def _interpret_24bit_as_int32(raw):
+    prefix = b'\xFF' if struct.unpack('3b', raw)[0] & 0x80 > 0 else b'\x00'
     return struct.unpack('>i', prefix + raw)[0]
 
 
-def _unpack_16bit_signed_int(raw):
-    prefix = b'\xFF' if struct.unpack('2B', raw)[0] & 0x80 > 0 else b'\x00'
+def _interpret_16bit_as_int32(raw):
+    prefix = b'\xFF' if struct.unpack('2b', raw)[0] & 0x80 > 0 else b'\x00'
     return struct.unpack('>i', prefix * 2 + raw)[0]
 
 
@@ -53,7 +53,7 @@ def _parse_aux(stop_byte, raw_data):
         warnings.warn(
             'Stop Byte is %s. Formats other than 0xC0 '
             '(Standard with accel) is not implemented.' % stop_byte)
-    return [AUX_SCALE * _unpack_16bit_signed_int(v) for v in raw_data]
+    return [AUX_SCALE * _interpret_16bit_as_int32(v) for v in raw_data]
 
 
 def _get_eeg_scale(gain):
@@ -65,7 +65,7 @@ def _parse_eeg(raw_eeg, gain=None):
         warnings.warn('Gain value is not explicitly set. Using 24.')
         gain = 24
     scale = _get_eeg_scale(gain)
-    return _unpack_24bit_signed_int(raw_eeg) * scale
+    return _interpret_24bit_as_int32(raw_eeg) * scale
 
 
 class Cyton:
