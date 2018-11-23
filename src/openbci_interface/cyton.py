@@ -143,6 +143,7 @@ class Cyton:
         self._serial = serial
         self._board = CytonBoard(self._serial)
         self._close_on_terminate = close_on_terminate
+        self._time_offset = time.time() - time.monotonic()
 
         # Public (read-only) attributes
         # Since a serial communication must happen to alter the state of
@@ -761,7 +762,7 @@ class Cyton:
             sample2 = self._read_packet()
             sample['eeg'].extend(sample2['eeg'])
             sample['valid'] = sample['valid'] and sample2['valid']
-        sample['timestamp'] = time.time()
+        sample['timestamp'] = self._time_offset + time.monotonic()
         return sample
 
     def _read_packet(self):
