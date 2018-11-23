@@ -1,7 +1,7 @@
 """Implements ``stream`` command."""
 import sys
 import json
-import time
+import sched
 import logging
 import argparse
 
@@ -61,20 +61,21 @@ def main(args):
             pass
 
 
+def _periodic(scheduler, interval, func):
+    scheduler.enter(interval, 1, _periodic, (scheduler, interval, func))
+    func()
+
+
 def _run(board):
-    cycle = 0.85 * board.cycle
-    unit_wait = cycle / 10.0
-    last_acquired = time.time()
-    while True:
-        now = time.time()
-        if now - last_acquired < cycle:
-            time.sleep(unit_wait)
-            continue
+    def _process():
         sample = board.read_sample()
-        last_acquired = now
         sys.stdout.write(json.dumps(sample))
         sys.stdout.write('\n')
         sys.stdout.flush()
+    scheduler = sched.scheduler()
+    interval = board.cycle
+    scheduler.enter(interval, 1, _periodic, (scheduler, interval, _process))
+    scheduler.run(blocking=True)
 
 
 def _get_serial(args):
