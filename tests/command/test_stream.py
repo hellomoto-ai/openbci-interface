@@ -4,6 +4,24 @@ from tests import messages
 from tests.serial_mock import SerialMock as BaseSerialMock
 
 
+_PACKET = (
+    b'\xa0'          # Start byte
+    b'w'             # Packet ID
+    b'\x00\x00\x00'  # EEG 1
+    b'\x00\x00\x00'  # EEG 2
+    b'\x00\x00\x00'  # EEG 3
+    b'\x00\x00\x00'  # EEG 4
+    b'\x00\x00\x00'  # EEG 5
+    b'\x00\x00\x00'  # EEG 6
+    b'\x00\x00\x00'  # EEG 7
+    b'\x00\x00\x00'  # EEG 8
+    b'\x00\x00'      # AUX 1
+    b'\x00\x00'      # AUX 2
+    b'\x00\x00'      # AUX 3
+    b'\xc0'          # Stop byte
+)
+
+
 class SerialMock(BaseSerialMock):
     _patterns = iter([
         (b'v', messages.CYTON_V3_INFO),
@@ -21,23 +39,7 @@ class SerialMock(BaseSerialMock):
         (b'*', None), (b'x8060110X', messages.SET_CHANNEL_8),
         (b'/0', messages.BOARD_MODE_DEFAULT),
         (b'~6', messages.SAMPLE_RATE_250),
-        (
-            b'b',
-            b'\xa0'          # Start byte
-            b'w'             # Packet ID
-            b'\xd1+\x02'     # EEG 1
-            b'\xcd\x81\x13'  # EEG 2
-            b'\xcf\xcf\x1d'  # EEG 3
-            b'\xcf_C'        # EEG 4
-            b'\xce\xf4U'     # EEG 5
-            b'\x03_\xce'     # EEG 6
-            b'\x03U\x92'     # EEG 7
-            b'\x03\\I'       # EEG 8
-            b'\x01\xb0'      # AUX 1
-            b'\x07\x10'      # AUX 2
-            b'\x1c\xc0'      # AUX 3
-            b'\xc0'          # Stop byte
-        ),
+        (b'b', _PACKET),
         (b's', None),
     ])
 

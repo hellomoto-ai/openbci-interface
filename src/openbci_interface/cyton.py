@@ -787,8 +787,8 @@ class Cyton:
         self.reset_board()
         self.get_firmware_version()
         self.set_board_mode(board_mode)
-        time.sleep(0.5)
         self.set_sample_rate(sample_rate)
+        time.sleep(0.5)
         conf = self.get_default_settings()
         for i in range(self.num_eeg):
             # Channel configuration commands are non-blocking

@@ -64,9 +64,9 @@ def main(args):
 def _run(board):
     cycle = 0.85 * board.cycle
     unit_wait = cycle / 10.0
-    last_acquired = time.time()
+    last_acquired = time.monotonic()
     while True:
-        now = time.time()
+        now = time.monotonic()
         if now - last_acquired < cycle:
             time.sleep(unit_wait)
             continue
