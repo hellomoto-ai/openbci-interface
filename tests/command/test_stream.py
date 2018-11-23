@@ -1,4 +1,4 @@
-from openbci_interface.command import stream_
+from openbci_interface.command import stream
 
 from tests import messages
 from tests.serial_mock import SerialMock as BaseSerialMock
@@ -49,8 +49,8 @@ def _raise_kbi():
 def test_stream(mocker):
     """Test ``stream`` command"""
     mocker.patch(
-        'openbci_interface.command.stream_.Serial', SerialMock)
+        'openbci_interface.command.stream.Serial', SerialMock)
     mocker.patch(
-        'openbci_interface.command.stream_.sys.stdout.flush', _raise_kbi)
-    stream_.main(['--port', 'foo'])
+        'openbci_interface.command.stream.sys.stdout.flush', _raise_kbi)
+    stream.main(['--port', 'foo'])
     mocker.resetall()
