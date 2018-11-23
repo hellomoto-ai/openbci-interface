@@ -10,7 +10,7 @@ import openbci_interface.command
 VERSION_STRING = 'OpenBCI Interface {}'.format(__version__)
 
 
-def _parse_args(commands):
+def _parse_args(commands, args):
     parser = argparse.ArgumentParser(
         description='Interact with OpenBCI boards.',
         add_help=False,
@@ -18,7 +18,7 @@ def _parse_args(commands):
     parser.add_argument('command', choices=commands)
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--version', action='version', version=VERSION_STRING)
-    namespace, args = parser.parse_known_args()
+    namespace, args = parser.parse_known_args(args)
 
     if namespace.debug:
         # it's often useful to be able to access debug flag in sub command
@@ -26,13 +26,13 @@ def _parse_args(commands):
     return namespace, args
 
 
-def main():
+def main(args=None):
     """Entrypoint for `openbci_interface` command"""
     subcommands = {
         module: getattr(openbci_interface.command, module)
         for module in openbci_interface.command.__all__
     }
-    namespace, args = _parse_args(subcommands.keys())
+    namespace, args = _parse_args(subcommands.keys(), args)
     _init_logger(namespace.debug)
     subcommands[namespace.command].main(args)
 
