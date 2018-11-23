@@ -1,3 +1,9 @@
+2018-11-22 moto<moto@hellomoto.ai>
+	* 0.7.0
+	[Cyton]
+	Rename `finalize` method to `terminate`.
+	Add `cycle` property for providing sampling cycle.
+	Add `valid` key to sample acquisition. It is True when STOP_BYTE was 0xC0.
 2018-11-10 moto<moto@hellomoto.ai>
 	* 0.6.0
 	[Cyton]
