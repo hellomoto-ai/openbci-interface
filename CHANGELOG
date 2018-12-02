@@ -1,3 +1,7 @@
+2018-12-02 moto<moto@hellomoto.ai>
+	* 0.8.0
+	[Cyton]
+	Add `get_config` method.
 2018-11-22 moto<moto@hellomoto.ai>
 	* 0.7.0
 	[Cyton]
