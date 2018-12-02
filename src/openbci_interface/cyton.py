@@ -728,7 +728,7 @@ class Cyton:
                  "aux": [<channel1>, ..., <channel3>],
                  "packet_id": int,
                  "timestamp": float,
-`                "valid": bool
+                 "valid": bool
                }
 
 
@@ -781,22 +781,21 @@ class Cyton:
 
     ###########################################################################
     # Higher level function
-    def initialize(self, board_mode='default', sample_rate=250):
+    def initialize(
+            self, board_mode='default', sample_rate=250, channel_configs=None):
         """Initialize board, channel, sample rate to default."""
-        wait_time = 0.1  # value picked up randomly without logical meaning
         self.reset_board()
         self.get_firmware_version()
         self.set_board_mode(board_mode)
         self.set_sample_rate(sample_rate)
         time.sleep(0.5)
-        conf = self.get_default_settings()
-        for i in range(self.num_eeg):
-            # Channel configuration commands are non-blocking
-            # so adding some wait time here.
-            self.enable_channel(i + 1)
-            time.sleep(wait_time)
-            self.configure_channel(i + 1, **conf)
-            time.sleep(wait_time)
+        if channel_configs is None:
+            default_configs = self.get_default_settings()
+            channel_configs = [{
+                'enabled': True,
+                'parameters': default_configs,
+            }] * 16
+        self.set_channel_configs(channel_configs)
 
     def terminate(self):
         """Stop streaming if necessary then close connection"""
@@ -804,3 +803,38 @@ class Cyton:
             self.stop_streaming()
         if self._close_on_terminate:
             self._serial.close()
+
+    def set_channel_configs(self, channel_configs):
+        """Configure channels
+
+        Parameters
+        ----------
+        channel_configs : list of dict
+            ``enabled`` (bool):
+             Wheather channels is enabled.
+
+            ``parameters`` (dict):
+             Channel parameters.
+
+                ``power_down`` (str)
+
+                ``gain`` (int)
+
+                ``input_type`` (str)
+
+                ``bias`` (int)
+
+                ``srb2`` (str)
+
+                ``srb1`` (str)
+        """
+        wait_time = 0.25
+        for i in range(self.num_eeg):
+            channel = channel_configs[i]
+            self.enable_channel(i+1)
+            time.sleep(wait_time)
+            self.configure_channel(i+1, **channel['parameters'])
+            time.sleep(wait_time)
+            if not channel['enabled']:
+                self.disable_channel(i)
+                time.sleep(wait_time)
