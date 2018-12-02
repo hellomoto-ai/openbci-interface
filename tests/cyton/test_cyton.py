@@ -649,3 +649,56 @@ class TestCytonReadSample:
         cyton_mock.start_streaming()
         with pytest.raises(exception.SampleAcquisitionTimeout):
             cyton_mock.read_sample()
+
+
+class TestCytonConfigIO:
+    """Configuration seliarazation"""
+    @staticmethod
+    def test_export_configs(cyton_mock):
+        """Test export configuration"""
+        cyton_mock._serial.patterns = [
+            (b'v', messages.CYTON_V3_WITH_DAISY_INFO),
+            (b'V', b'v3.1.1$$$'),
+            (b'/0', messages.BOARD_MODE_DEFAULT),
+            (b'~6', messages.SAMPLE_RATE_250),
+            (b'D', b'060110$$$'),
+            (b'!', None), (b'x1060110X', messages.SET_CHANNEL_1),
+            (b'@', None), (b'x2060110X', messages.SET_CHANNEL_2),
+            (b'#', None), (b'x3060110X', messages.SET_CHANNEL_3),
+            (b'$', None), (b'x4060110X', messages.SET_CHANNEL_4),
+            (b'%', None), (b'x5060110X', messages.SET_CHANNEL_5),
+            (b'^', None), (b'x6060110X', messages.SET_CHANNEL_6),
+            (b'&', None), (b'x7060110X', messages.SET_CHANNEL_7),
+            (b'*', None), (b'x8060110X', messages.SET_CHANNEL_8),
+            (b'Q', None), (b'xQ060110X', messages.SET_CHANNEL_9),
+            (b'W', None), (b'xW060110X', messages.SET_CHANNEL_10),
+            (b'E', None), (b'xE060110X', messages.SET_CHANNEL_11),
+            (b'R', None), (b'xR060110X', messages.SET_CHANNEL_12),
+            (b'T', None), (b'xT060110X', messages.SET_CHANNEL_13),
+            (b'Y', None), (b'xY060110X', messages.SET_CHANNEL_14),
+            (b'U', None), (b'xU060110X', messages.SET_CHANNEL_15),
+            (b'I', None), (b'xI060110X', messages.SET_CHANNEL_16),
+        ]
+        with cyton_mock:
+            configs = cyton_mock.export_config()
+            default_configs = {
+                'board_mode': 'default',
+                'sample_rate': 250,
+                'channels': [{
+                    'enabled': True,
+                    'parameters': {
+                        'power_down': 'ON',
+                        'gain': 24,
+                        'input_type': 'NORMAL',
+                        'bias': 1,
+                        'srb2': 1,
+                        'srb1': 0,
+                    },
+                }] * 16,
+            }
+            assert default_configs == configs
+
+        # for cfg in cyton_mock.channel_configs:
+        #     cfg.gain = 24
+        import json
+        print(json.dumps(configs))

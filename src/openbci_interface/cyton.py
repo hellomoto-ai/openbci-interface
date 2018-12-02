@@ -804,6 +804,58 @@ class Cyton:
         if self._close_on_terminate:
             self._serial.close()
 
+    def export_config(self):
+        """Export board config to JSON
+
+        Returns
+        -------
+        dict
+            ``board_mode`` (str or None):
+             Current board mode.
+
+            ``sample_rate`` (int or None):
+             Current sample rate.
+
+            ``channels`` (list of dict):
+             Configuration of each channel
+             with the following keys.
+
+                ``enabled`` (bool):
+                 Wheather channels is enabled.
+
+                ``parameters`` (dict):
+                 Channel parameters.
+
+                    ``power_down`` (str)
+
+                    ``gain`` (int)
+
+                    ``input_type`` (str)
+
+                    ``bias`` (int)
+
+                    ``srb2`` (str)
+
+                    ``srb1`` (str)
+        """
+        return {
+            'board_mode': self.board_mode,
+            'sample_rate': self.sample_rate,
+            'channels': [
+                {
+                    'enabled': config.enabled,
+                    'parameters': {
+                        'power_down': config.power_down,
+                        'gain': config.gain,
+                        'input_type': config.input_type,
+                        'bias': config.bias,
+                        'srb2': config.srb2,
+                        'srb1': config.srb1,
+                    }
+                } for config in self.channel_configs
+            ]
+        }
+
     def set_channel_configs(self, channel_configs):
         """Configure channels
 
