@@ -787,9 +787,10 @@ class Cyton:
         self.reset_board()
         self.get_firmware_version()
         self.set_board_mode(board_mode)
+        time.sleep(0.5)
         self.set_sample_rate(sample_rate)
         time.sleep(0.5)
-        if channel_configs is None:
+        if not channel_configs:
             default_configs = self.get_default_settings()
             channel_configs = [{
                 'enabled': True,
@@ -804,8 +805,8 @@ class Cyton:
         if self._close_on_terminate:
             self._serial.close()
 
-    def export_config(self):
-        """Export board config to JSON
+    def get_config(self):
+        """Get the current board config to JSON
 
         Returns
         -------
