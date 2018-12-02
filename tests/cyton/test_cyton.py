@@ -654,8 +654,8 @@ class TestCytonReadSample:
 class TestCytonConfigIO:
     """Configuration seliarazation"""
     @staticmethod
-    def test_export_configs(cyton_mock):
-        """Test export configuration"""
+    def test_get_configs(cyton_mock):
+        """Test get configuration"""
         cyton_mock._serial.patterns = [
             (b'v', messages.CYTON_V3_WITH_DAISY_INFO),
             (b'V', b'v3.1.1$$$'),
@@ -680,7 +680,7 @@ class TestCytonConfigIO:
             (b'I', None), (b'xI060110X', messages.SET_CHANNEL_16),
         ]
         with cyton_mock:
-            configs = cyton_mock.export_config()
+            configs = cyton_mock.get_config()
             default_configs = {
                 'board_mode': 'default',
                 'sample_rate': 250,
