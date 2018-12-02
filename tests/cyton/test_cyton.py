@@ -697,8 +697,3 @@ class TestCytonConfigIO:
                 }] * 16,
             }
             assert default_configs == configs
-
-        # for cfg in cyton_mock.channel_configs:
-        #     cfg.gain = 24
-        import json
-        print(json.dumps(configs))
