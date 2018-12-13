@@ -7,6 +7,16 @@ from openbci_interface import exception
 _LG = logging.getLogger(__name__)
 
 
+def _interpret_24bit_as_int32(raw):
+    prefix = b'\xFF' if struct.unpack('3b', raw)[0] & 0x80 > 0 else b'\x00'
+    return struct.unpack('>i', prefix + raw)[0]
+
+
+def _interpret_16bit_as_int32(raw):
+    prefix = b'\xFF' if struct.unpack('2b', raw)[0] & 0x80 > 0 else b'\x00'
+    return struct.unpack('>i', prefix * 2 + raw)[0]
+
+
 class Common:
     """Stateless interface common to Cyton and Ganglion
 
@@ -341,8 +351,8 @@ class CytonBoard(Common):
         stop_byte = self._read_stop_byte()
         return {
             'packet_id': packet_id,
-            'eeg': raw_eeg,
-            'aux': raw_aux,
+            'raw_eeg': raw_eeg,
+            'raw_aux': raw_aux,
             'stop_byte': stop_byte,
         }
 
@@ -350,10 +360,12 @@ class CytonBoard(Common):
         return struct.unpack('B', self._serial.read())[0]
 
     def _read_eeg_data(self):
-        return [self._serial.read(3) for _ in range(8)]
+        return [
+            _interpret_24bit_as_int32(self._serial.read(3)) for _ in range(8)]
 
     def _read_aux_data(self):
-        return [self._serial.read(2) for _ in range(3)]
+        return [
+            _interpret_16bit_as_int32(self._serial.read(2)) for _ in range(3)]
 
     def _read_stop_byte(self):
         return struct.unpack('B', self._serial.read())[0]

@@ -532,6 +532,8 @@ class TestCytonReadSample:
         expected = {
             'eeg': [0.0] * 8,
             'aux': [0.0] * 3,
+            'raw_eeg': [0] * 8,
+            'raw_aux': [0] * 3,
             'packet_id': 119,
             'timestamp': None,
             'valid': True,
@@ -586,6 +588,8 @@ class TestCytonReadSample:
         expected = {
             'eeg': [0.0] * 16,
             'aux': [0.0] * 3,
+            'raw_eeg': [0] * 16,
+            'raw_aux': [0] * 3,
             'packet_id': 119,
             'timestamp': None,
             'valid': True,
@@ -625,6 +629,8 @@ class TestCytonReadSample:
         expected = {
             'eeg': [0.0] * 8,
             'aux': [0.0] * 3,
+            'raw_eeg': [0] * 8,
+            'raw_aux': [0] * 3,
             'packet_id': 119,
             'timestamp': None,
             'valid': False,
