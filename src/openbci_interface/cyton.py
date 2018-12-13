@@ -1,7 +1,6 @@
 """Define interface to Cyton board"""
 import re
 import time
-import struct
 import logging
 import warnings
 
@@ -38,22 +37,12 @@ def _parse_board_mode(message):
     return ret
 
 
-def _interpret_24bit_as_int32(raw):
-    prefix = b'\xFF' if struct.unpack('3b', raw)[0] & 0x80 > 0 else b'\x00'
-    return struct.unpack('>i', prefix + raw)[0]
-
-
-def _interpret_16bit_as_int32(raw):
-    prefix = b'\xFF' if struct.unpack('2b', raw)[0] & 0x80 > 0 else b'\x00'
-    return struct.unpack('>i', prefix * 2 + raw)[0]
-
-
 def _parse_aux(stop_byte, raw_data):
     if stop_byte != 0xC0:
         warnings.warn(
             'Stop Byte is %s. Formats other than 0xC0 '
             '(Standard with accel) is not implemented.' % stop_byte)
-    return [AUX_SCALE * _interpret_16bit_as_int32(v) for v in raw_data]
+    return [AUX_SCALE * v for v in raw_data]
 
 
 def _get_eeg_scale(gain):
@@ -65,7 +54,7 @@ def _parse_eeg(raw_eeg, gain=None):
         warnings.warn('Gain value is not explicitly set. Using 24.')
         gain = 24
     scale = _get_eeg_scale(gain)
-    return _interpret_24bit_as_int32(raw_eeg) * scale
+    return raw_eeg * scale
 
 
 class Cyton:
@@ -726,6 +715,8 @@ class Cyton:
                {
                  "eeg": [<channel1>, ..., <channelN>],
                  "aux": [<channel1>, ..., <channel3>],
+                 "raw_eeg": [<channel1>, ..., <channelN>],
+                 "raw_aux": [<channel1>, ..., <channel3>],
                  "packet_id": int,
                  "timestamp": float,
                  "valid": bool
@@ -761,6 +752,7 @@ class Cyton:
         if self.daisy_attached:
             sample2 = self._read_packet()
             sample['eeg'].extend(sample2['eeg'])
+            sample['raw_eeg'].extend(sample2['raw_eeg'])
             sample['valid'] = sample['valid'] and sample2['valid']
         sample['timestamp'] = self._time_offset + time.monotonic()
         return sample
@@ -768,10 +760,10 @@ class Cyton:
     def _read_packet(self):
         self._board.wait_start_byte()
         data = self._board.read_packet()
-        data['eeg'] = self._parse_eeg(data['eeg'])
-        data['aux'] = _parse_aux(data['stop_byte'], data['aux'])
+        data['eeg'] = self._parse_eeg(data['raw_eeg'])
+        data['aux'] = _parse_aux(data['stop_byte'], data['raw_aux'])
         data['valid'] = data['stop_byte'] == STOP_BYTE
-        return {key: data[key] for key in ['packet_id', 'eeg', 'aux', 'valid']}
+        return {k: v for k, v in data.items() if k not in ['stop_byte']}
 
     def _parse_eeg(self, raw_eeg_data):
         return [
