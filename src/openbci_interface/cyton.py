@@ -4,6 +4,8 @@ import time
 import logging
 import warnings
 
+import serial as pyserial
+
 from openbci_interface.core import CytonBoard
 from openbci_interface import util, channel_config
 
@@ -126,9 +128,9 @@ class Cyton:
 
     def __init__(self, serial, close_on_terminate=True):
         if isinstance(serial, str):
-            serial = serial.Serial(port=serial, baudrate=115200, timeout=2)
+            serial = pyserial.Serial(port=serial, baudrate=115200, timeout=2)
         elif isinstance(serial, dict):
-            serial = serial.Serial(**serial)
+            serial = pyserial.Serial(**serial)
         self._serial = serial
         self._board = CytonBoard(self._serial)
         self._close_on_terminate = close_on_terminate
